@@ -42,17 +42,16 @@ void DEBUG(int level, const char *fmt, ... )
     
     /* Check to see if the env is set */
     if ( (char_level = getenv( VCFS_DEBUG_ENV )) != NULL) {
-
-	curr_level = atoi( char_level );
-
-	/* If it set at or above the level used, print the debug message */
-	if (level <= curr_level) {
-	    fprintf(stderr, "*****************************************************************\n");
-	    fprintf(stderr, "[VCFS DEBUG] %d: ", num++);
-	    vfprintf(stderr, fmt, argp); /* print the variable list */
-	    fprintf(stderr, "\n*****************************************************************\n");
-	    fflush(stderr);
-	}
+        
+        curr_level = atoi( char_level );
+        
+        /* If it set at or above the level used, print the debug message */
+        if (level <= curr_level) {
+            fprintf(stderr, "[VCFS DEBUG] %d: ", num++);
+            vfprintf(stderr, fmt, argp); /* print the variable list */
+            fprintf(stderr, "\n");
+            fflush(stderr);
+        }
     }
     va_end( argp ); /* end the var arg list */
 }
