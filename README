@@ -1,0 +1,41 @@
+Warning:
+This software is in the early stages of development. Please use with caution.
+
+Installation:
+Running 'make' gives you two executables, 'vcfsd' and 'cvstool'.
+
+Requirements:
+This package has only been tested on one Mandrake Linux x86 machine, running kernel
+2.2.17. Your mileage may vary.
+
+You must have 'rpc.mountd' or another version of the mount protocol installed on your
+system. You also must have root privilegas on the installation machine.
+
+You will need a directory to export in order to bootstrap a "root" filehandle for
+your NFS client to start with. For maximum security, export an empty directory with
+no permissions.
+
+Example:
+mkdir /null
+chmod 0 /null
+
+Next, you will need to create the actual vcfs mount point (mkdir /vcfs).
+In order for cvstool to work, set the environment variable VCFS_MOUNT to this
+directory.
+Add the mount point to your /etc/exports file (add the line "/null localhost") 
+to export the boostraped mount point to the local machine.
+
+Now start the vcfsd daemon to connect to a CVS repository.
+
+Finally, as root, make sure the mount daemon is running ('rpc.mountd' on my system),
+and mount the filesystem with the command 'mount -o port=3155,intr localhost:/null /vcfs'
+'cd' to /vcfs to view your repository.
+
+
+Acknowledgements:
+I learned a great deal from Matt Blaze's CFS, who's ideas vcfs borrows heavily from.
+
+
+
+
+
