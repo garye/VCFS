@@ -32,15 +32,56 @@ int main(int argc, char **argv)
     SVCXPRT *tp;
     char *pword;
     register SVCXPRT *transp;
-    
+    char *module;
+    char *root;
+    char *hostname;
+    char *user;
+    bool use_gzip = TRUE;
+    vcfs_tag tag;
+    int opt;
+
     progname = argv[0];
     port = VCFS_PORT;
-    
+    memset(tag, 0, VCFS_TAG_LEN);
+
     if (argc < 5) {
         usage(NULL);
         exit(1);
     }
     
+    /* Get command options */
+    opterr = 0;
+    while ((opt = getopt(argc, argv, "nt:")) != -1)
+    {
+        switch (opt)
+        {
+        case 'n':
+            use_gzip = FALSE;
+            break;
+            
+        case 't':
+            strncpy(&tag[0], optarg, VCFS_TAG_LEN);
+            break;
+        default:
+            usage("Invalid option.");
+            exit(1);
+        }
+        
+    }
+    
+    /* Get the four required arguments */
+    if (optind + 4 > argc)
+    {
+        usage(NULL);
+        exit(1);
+    }
+    
+    hostname = argv[optind++];
+    root = argv[optind++];
+    module = argv[optind++];
+    user = argv[optind];
+    
+
     /* Get the user's cvs password */
     pword = getpass("Enter CVS password:");
     
@@ -103,7 +144,8 @@ int main(int argc, char **argv)
     UID = getuid();
     GID = getgid();
     
-    cvs_init(argv[1], argv[2], argv[3], argv[4], pword, VCFS_ROOT);
+    cvs_init_session(hostname, root, module, user, 
+                     pword, VCFS_ROOT, use_gzip, tag);
     
     if (cvs_pserver_connect() < 0) {
         fprintf(stderr, "Authentication on CVS server failed\n");
@@ -121,7 +163,10 @@ void usage(char *msg)
     if (msg != NULL) {
         fprintf(stderr, "%s: %s\n", progname, msg);
     }
-    fprintf(stderr, "Usage: %s [hostname] [cvsroot] [project] [username]\n",
+    
+    fprintf(stderr, "Usage: %s [OPTION] HOSTNAME CVSROOT PROJECT USERNAME\n\n",
             progname);
+    fprintf(stderr, "-n\tDon't gzip file contents\n");
+    fprintf(stderr, "-t TAG\tLoad the contents of the repository specified by TAG\n");
 }
 

@@ -7,7 +7,7 @@
 #include "vcfs.h"
 
 #define CVSPORT 2401
-#define CVS_BUFF_SIZE 32768
+#define CVS_BUFF_SIZE (64 * 1024)
 
 /* A buffer to hold a response from the CVS server */
 typedef struct cvs_buff {
@@ -18,7 +18,7 @@ typedef struct cvs_buff {
 } cvs_buff;
 
 /* Information about the current CVS session */
-typedef struct cvs_args {
+typedef struct cvs_session {
     char *module;
     char *hostname;
     char *root;
@@ -26,7 +26,9 @@ typedef struct cvs_args {
     char *password;
     char *dir;
     int sock;
-} cvs_args;
+    bool use_gzip;
+    vcfs_tag tag;
+} cvs_session;
 
 #define CVS_READ_SIZE 8192
 
@@ -36,12 +38,12 @@ void cvs_free_buff(cvs_buff *b);
 void cvs_ensure_buff(cvs_buff *b, int n);
 
 
-void cvs_init(char *hostname, char *root, char *module, char *user,
-              char *password, char *dir);
+void cvs_init_session(char *hostname, char *root, char *module, char *user,
+                      char *password, char *dir, bool use_gzip, vcfs_tag tag);
 int cvs_pserver_connect();
 int cvs_send(int sock, char *msg);
 int cvs_expand_modules(cvs_buff **resp);
-int cvs_co(cvs_buff **resp);
+int cvs_co(cvs_buff **resp, vcfs_tag tag);
 int cvs_buff_read_line(cvs_buff *b, char **line);
 int cvs_ver_extended(char *name, vcfs_path *short_name, vcfs_ver *ver);
 int cvs_get_file(vcfs_path name, char *ver, cvs_buff **resp);

@@ -29,7 +29,7 @@ shifts[] = {
   182,128,158,208,162,132,167,209,149,241,153,251,237,236,171,195,
   243,233,253,240,194,250,191,155,142,137,245,235,163,242,178,152 };
 
-static cvs_args *args;
+static cvs_session *session;
 int DEBUG_RESP = 0;
 
 /* Taken from the cvs client code */
@@ -73,18 +73,20 @@ static struct hostent *init_sockaddr(struct sockaddr_in *name,
     return hostinfo;
 }
 
-/* Set CVS session arguments */
-void cvs_init(char *hostname, char *root, char *module, char *user,
-              char *password, char *dir)
+/* Set initial CVS session arguments */
+void cvs_init_session(char *hostname, char *root, char *module, char *user,
+                      char *password, char *dir, bool use_gzip, vcfs_tag tag)
 {
-    args = (cvs_args *)malloc(sizeof(cvs_args));
+    session = (cvs_session *)malloc(sizeof(cvs_session));
 
-    args->hostname = strdup(hostname);
-    args->root = strdup(root);
-    args->module = strdup(module);
-    args->user = strdup(user);
-    args->password = scramble(password);
-    args->dir = strdup(dir);
+    session->hostname = strdup(hostname);
+    session->root = strdup(root);
+    session->module = strdup(module);
+    session->user = strdup(user);
+    session->password = scramble(password);
+    session->dir = strdup(dir);
+    session->use_gzip = use_gzip;
+    *session->tag = *tag;
 }
 
 /* Returned a malloc'ed cvs_buff.
@@ -191,7 +193,7 @@ cvs_buff *cvs_get_resp()
     struct pollfd fds;
     int result;
 
-    fds.fd = args->sock;
+    fds.fd = session->sock;
     fds.events = POLLIN; /* Check if there is data waiting to be read */
     fds.revents = 0;
 
@@ -219,7 +221,7 @@ cvs_buff *cvs_get_resp()
         }
         
         memset(&temp, 0, CVS_READ_SIZE);
-        n = recv(args->sock, &temp, CVS_READ_SIZE, 0);
+        n = recv(session->sock, &temp, CVS_READ_SIZE, 0);
         
         if (DEBUG_RESP)
         {
@@ -255,7 +257,7 @@ int cvs_pserver_connect()
         return -1;
     }
     
-    hostinfo = init_sockaddr (&client_sock, args->hostname, CVSPORT);
+    hostinfo = init_sockaddr (&client_sock, session->hostname, CVSPORT);
     
     if (connect(sock, (struct sockaddr *) &client_sock, 
                 sizeof(client_sock)) < 0)
@@ -267,15 +269,15 @@ int cvs_pserver_connect()
     /* Authenticate ourselves with the server */
     if (send (sock, begin, strlen (begin), 0) < 0)
         fprintf(stderr, "Can't send\n");
-    if (send (sock, args->root, strlen(args->root), 0) < 0)
+    if (send (sock, session->root, strlen(session->root), 0) < 0)
         fprintf(stderr, "Can't send\n");
     if (send (sock, "\012", 1, 0) < 0)
         fprintf(stderr, "Can't send\n");
-    if (send (sock, args->user, strlen(args->user), 0) < 0)
+    if (send (sock, session->user, strlen(session->user), 0) < 0)
         fprintf(stderr, "Can't send\n");
     if (send (sock, "\012", 1, 0) < 0)
         fprintf(stderr, "Can't send\n");
-    if (send (sock, args->password, strlen(args->password), 0) < 0)
+    if (send (sock, session->password, strlen(session->password), 0) < 0)
         fprintf(stderr, "Can't send\n");
     if (send (sock, "\012", 1, 0) < 0)
         fprintf(stderr, "Can't send\n");
@@ -291,7 +293,7 @@ int cvs_pserver_connect()
         return -1;
     }
     
-    args->sock = sock;
+    session->sock = sock;
     return sock;
 }
 
@@ -329,24 +331,24 @@ int cvs_expand_modules(cvs_buff **resp)
     memset(buff, 0, 1024);
 
     /*
-    if (chdir(args->dir) != 0) {
-        fprintf(stderr, "Could not chdir to directory %s\n", args->dir);
+    if (chdir(session->dir) != 0) {
+        fprintf(stderr, "Could not chdir to directory %s\n", session->dir);
         return 0;
     }
     */
 
-    sprintf(&cmd[0], "Root %s\012", args->root);
-    cvs_send(args->sock, cmd);
+    sprintf(&cmd[0], "Root %s\012", session->root);
+    cvs_send(session->sock, cmd);
 
-    sprintf(&cmd[0], "Argument %s\012", args->module);
-    cvs_send(args->sock, cmd);
+    sprintf(&cmd[0], "Argument %s\012", session->module);
+    cvs_send(session->sock, cmd);
 
-    cvs_send(args->sock, "Directory .\012");
+    cvs_send(session->sock, "Directory .\012");
     
-    sprintf(&cmd[0], "%s\012", args->root); /* Unecessary?? */
-    cvs_send(args->sock, cmd);
+    sprintf(&cmd[0], "%s\012", session->root); /* Unecessary?? */
+    cvs_send(session->sock, cmd);
     
-    cvs_send(args->sock, "expand-modules\012");
+    cvs_send(session->sock, "expand-modules\012");
     
     *resp = cvs_get_resp();
     
@@ -354,27 +356,30 @@ int cvs_expand_modules(cvs_buff **resp)
 }
 
 /* Checkout the module and get a complete dir listing. */
-int cvs_co(cvs_buff **resp)
+int cvs_co(cvs_buff **resp, vcfs_tag tag)
 {
     char cmd[1024];
     time_t before;
 
-    cvs_send(args->sock, "gzip-file-contents 3\012");
-    
+    if (session->use_gzip)
+    {
+        cvs_send(session->sock, "gzip-file-contents 3\012");
+    }
+
     /* TBD - rewrite with sprintf!! */
     strcpy(cmd, "Argument ");
-    strcat(cmd, args->module);
+    strcat(cmd, session->module);
     strcat(cmd, "\012");
-    cvs_send(args->sock, cmd);
+    cvs_send(session->sock, cmd);
     
     sprintf(cmd, "Directory .\012");
-    cvs_send(args->sock, cmd);
+    cvs_send(session->sock, cmd);
     
-    strcpy(cmd, args->root);
+    strcpy(cmd, session->root);
     strcat(cmd, "\012");
-    cvs_send(args->sock, cmd);
+    cvs_send(session->sock, cmd);
 
-    cvs_send(args->sock, "co\012");
+    cvs_send(session->sock, "co\012");
 
     before = time(NULL);
 
@@ -394,16 +399,16 @@ int cvs_get_file(vcfs_path name, char *ver, cvs_buff **resp)
     split_path(name, &parent, &entry);
     
     sprintf(cmd, "Argument -r\012Argument %s\012", ver);
-    cvs_send(args->sock, cmd);
+    cvs_send(session->sock, cmd);
 
-    sprintf(cmd, "Argument -u\012Directory .\012%s/%s\012", args->root, parent);
-    cvs_send(args->sock, cmd);
+    sprintf(cmd, "Argument -u\012Directory .\012%s/%s\012", session->root, parent);
+    cvs_send(session->sock, cmd);
     
     sprintf(cmd, "Entry /%s/%s///\012", entry, ver);
-    cvs_send(args->sock, cmd);
+    cvs_send(session->sock, cmd);
     
     sprintf(cmd, "Argument %s\012update\012", entry);
-    cvs_send(args->sock, cmd);
+    cvs_send(session->sock, cmd);
     
     *resp = cvs_get_resp();
     
@@ -422,16 +427,16 @@ int cvs_get_status(vcfs_path name, char *ver, cvs_buff **resp)
     split_path(name, &parent, &entry);
 
     sprintf(cmd, "Argument -r%s\012", ver);
-    cvs_send(args->sock, cmd);
+    cvs_send(session->sock, cmd);
 
-    sprintf(cmd, "Directory .\012%s/%s\012", args->root, parent);
-    cvs_send(args->sock, cmd);
+    sprintf(cmd, "Directory .\012%s/%s\012", session->root, parent);
+    cvs_send(session->sock, cmd);
     
     sprintf(cmd, "Entry /%s/%s///\012", entry, ver);
-    cvs_send(args->sock, cmd);
+    cvs_send(session->sock, cmd);
     
     sprintf(cmd, "Argument %s\012log\012", entry);
-    cvs_send(args->sock, cmd);
+    cvs_send(session->sock, cmd);
     
     *resp = cvs_get_resp();
     
@@ -447,14 +452,14 @@ int cvs_get_log(vcfs_path name, cvs_buff **resp)
 
     split_path(name, &parent, &entry);
     
-    sprintf(cmd, "Directory .\012%s/%s\012", args->root, parent);
-    cvs_send(args->sock, cmd);
+    sprintf(cmd, "Directory .\012%s/%s\012", session->root, parent);
+    cvs_send(session->sock, cmd);
 
     //sprintf(cmd, "Entry /%s/%s///\012", entry, ver);
-    //cvs_send(args->sock, cmd);
+    //cvs_send(session->sock, cmd);
 
     sprintf(cmd, "Argument %s\012log\012", entry);
-    cvs_send(args->sock, cmd);
+    cvs_send(session->sock, cmd);
     
     *resp = cvs_get_resp();
     

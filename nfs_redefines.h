@@ -1,5 +1,5 @@
-#ifndef __FIX_H
-#define __FIX_H
+#ifndef __NFS_REDEF_H
+#define __NFS_REDEF_H
 
 //#define nfs_program_2 
 #define nfsproc_null_2_svc nfsproc_null_2

@@ -410,7 +410,7 @@ int vcfs_build_project()
     }
     
     /* Check out the project */
-    r = cvs_co(&co_buff);
+    r = cvs_co(&co_buff, NULL);
     
     /* Parse the response buffer, build the rest of the ventry tree */
     cvs_buff_read_line(co_buff, &line); /* Swallow first line. TBD - really? */
@@ -522,6 +522,7 @@ int vcfs_read(char *buff, vcfs_fhdata *fh, int count, int offset)
     vcfs_path filename;
     vcfs_ver ver;
     int compressed_offset;
+    bool compressed = FALSE;
     
     f = get_fh(fh);
     
@@ -576,6 +577,7 @@ int vcfs_read(char *buff, vcfs_fhdata *fh, int count, int offset)
     if (line[0] == 'z')
     {
         /* This file is compressed */
+        compressed = TRUE;
         size = atoi(line + 1);
         
         /* Get the uncompressed chunk of the file we need to fill the cache */
@@ -607,7 +609,12 @@ int vcfs_read(char *buff, vcfs_fhdata *fh, int count, int offset)
             size = READ_CACHE_SIZE;
         }
         read_cache->start += read_cache->size;
-        
+    
+        if (!compressed)
+        {
+            memcpy(read_cache->data, resp->data + resp->cookie + read_cache->start,
+                   size);
+        }
         read_cache->size = size;
         offset -= read_cache->start;
     }
@@ -616,6 +623,11 @@ int vcfs_read(char *buff, vcfs_fhdata *fh, int count, int offset)
         if (size > READ_CACHE_SIZE)
         {
             size = READ_CACHE_SIZE;
+        }
+        
+        if (!compressed)
+        {
+            memcpy(read_cache->data, resp->data + resp->cookie, size);
         }
         
         read_cache->size = size;

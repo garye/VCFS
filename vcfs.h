@@ -7,6 +7,8 @@
 
 #define debug printf
 
+typedef int bool;
+
 #define MAGICNUM 0xaaaa4444
 
 #define VCFS_ROOT "/tmp" /* TEMP: This is not used right now */
@@ -19,9 +21,13 @@ enum f_type {
 };
 typedef enum f_type f_type;
 
+#define VCFS_VER_LEN 16
+#define VCFS_TAG_LEN 32
+
 typedef char vcfs_path[NFS_MAXPATHLEN];
 typedef char vcfs_name[NFS_MAXNAMLEN];
-typedef char vcfs_ver[16];
+typedef char vcfs_ver[VCFS_VER_LEN];
+typedef char vcfs_tag[VCFS_TAG_LEN];
 
 /* The filehandle we use to communciate with NFS */
 typedef struct vcfs_fhdata {
@@ -48,7 +54,8 @@ typedef struct vcfs_ventry {
     ftype type;
     /* TODO - File stats go here */
     unsigned int mode;
-    char ver[16];
+    vcfs_ver ver;
+    vcfs_tag tag;
     unsigned int ctime;
     struct vcfs_ventry *next; /* Next ventry in the current directory */
     struct vcfs_ventry *dirent; /* A list of dir entries if this is a dir */
