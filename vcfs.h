@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include "nfsproto.h"
 
-
 #define debug printf
 
 typedef int bool;
@@ -25,7 +24,7 @@ typedef enum f_type f_type;
 #define VCFS_TAG_LEN 32
 
 typedef char vcfs_path[NFS_MAXPATHLEN];
-typedef char vcfs_name[NFS_MAXNAMLEN];
+  typedef char vcfs_name[NFS_MAXNAMLEN];
 typedef char vcfs_ver[VCFS_VER_LEN];
 typedef char vcfs_tag[VCFS_TAG_LEN];
 

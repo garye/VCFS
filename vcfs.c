@@ -14,6 +14,7 @@
 #include "vcfs.h"
 #include "cvs_cmds.h"
 #include "cvstool.h"
+#include "utils.h"
 
 #ifndef CVS_PASSWORD_FILE 
 #define CVS_PASSWORD_FILE ".cvspass"
@@ -193,8 +194,9 @@ int main(int argc, char **argv)
     exit(1);
 }
 
-/* Returns the password for this pserver from the cvs password
-   file (if it exists), NULL otherwise */
+/* Returns the password for this pserver from the cvs password file
+ * (if it exists), NULL otherwise
+ */
 char* get_cvs_passwd_from_file(char *user, char *hostname) 
 {
     
@@ -227,8 +229,11 @@ char* get_cvs_passwd_from_file(char *user, char *hostname)
     else {
 	/* Couldn't find their home dir.
 	 * We are outta luck */
+	DEBUG(DEBUG_M, "[get_cvs_passwd_from_file] Could not find home dir");
 	return NULL;
     }
+
+    DEBUG( DEBUG_H, "[get_cvs_passwd_from_file] home dir: %s", home );
 	
     /* Make space for filename to password file - TODO: what is the +3? */
     passfile = malloc( strlen(home) + strlen(CVS_PASSWORD_FILE) + 3);
@@ -245,61 +250,67 @@ char* get_cvs_passwd_from_file(char *user, char *hostname)
 	return NULL; /* Couldn't open the file */
     }
 
+    /* Get mem for full name */
+    user_at_host = malloc( strlen(user) + strlen(hostname) + 3);	
+    
+    /* Form into 'user@hostname' */	
+    strcat(user_at_host, user);
+    strcat(user_at_host, "@");
+    strcat(user_at_host, hostname);
+
     /* We have their CVS passwd file. Let's check each line for an
        appropriate entry */
     while ((line_length = getline( &linebuf, &linebuf_len, fp)) >= 0) {
 
 	line++;
 
-	/* Get mem for full name */
-	user_at_host = malloc( strlen(user) + strlen(hostname) + 3);	
-
-	/* Form into 'user@hostname' */	
-	strcat(user_at_host, user);
-	strcat(user_at_host, "@");
-	strcat(user_at_host, hostname);
-
 	/* Search for the username and server in the line */	
 	if ( (strstr(linebuf, user_at_host) != NULL) &&
+	     /* Search for 'pserver' since that is the only method we support */
+	     ((strstr(linebuf, "pserver") != NULL)) &&
 	     /* Search backword for first space char. */
 	     ((passwd_chunk = rindex(linebuf, ' ')) != NULL) &&
 	     /* Then for the char A. (ex. 'Aencryptedpasswd') */
 	     ((passwd_chunk = rindex(linebuf, 'A')) != NULL) ) {	    
-
-		/* Copy the chunk we found and trailing newline */
-		password_tmp = malloc( strlen(passwd_chunk) );
-		
-		/* skip initial space char vvv and skip trailing \n vvvvv */
-		strncpy(password_tmp, passwd_chunk + 1, strlen(passwd_chunk)-2);
-		
-		/* Unscrable passwd - the method is symetric */
-		password = scramble( password_tmp );
-		
-		/* Shift the whole string one char to the left,
-		   pushing the unwanted 'A' off the left end.
-		   Safe, because s is null-terminated. Taken from
-		   CVS client code */
-		for (i = 0; password[i]; i++) 
-		    password[i] = password[i + 1];
-
-		free(password_tmp); /* free malloc mem */
-	    }
-	    else {
-		/* Couldn't find or parse the passwd */
-		password = NULL; 
-	    }
+	    
+	    DEBUG(DEBUG_H, "[get_cvs_passwd_from_file] password line .cvspass: \n\t%s", linebuf);
+    
+	    /* Copy the chunk we found and trailing newline */
+	    password_tmp = malloc( strlen(passwd_chunk) );
+	    
+	    /* skip initial space char vvv and skip trailing \n vvvvv */
+	    strncpy(password_tmp, passwd_chunk + 1, strlen(passwd_chunk)-2);
+	    
+	    /* Unscrable passwd - the method is symetric */
+	    password = scramble( password_tmp );
+	    
+	    /* Shift the whole string one char to the left,
+	       pushing the unwanted 'A' off the left end.
+	       Safe, because s is null-terminated. Taken from
+	       CVS client code */
+	    for (i = 0; password[i]; i++) 
+		password[i] = password[i + 1];
+	    
+	    free(password_tmp); /* free malloc mem */
 	}
-
+	else {
+	    /* Couldn't find or parse the passwd */
+	    password = NULL; 
+	}
+    }
+    
     /* Close the passwd file */
     if ( fclose(fp) < 0 ) {
 	/* TODO: Should we warn the user we couldn't close their
            passwd file?? */
     }
-
+    
     /* release string memory */
     free(home);
     free(passfile); 
     free(user_at_host);
+
+    DEBUG(DEBUG_H, "[get_cvs_passwd_from_file] returning password: %s", password);
 
     return password;
 }
