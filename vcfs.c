@@ -9,12 +9,22 @@
 #include <signal.h>
 #include <termios.h>
 #include <unistd.h>
+#include <pwd.h>
 #include "nfsproto.h"
 #include "vcfs.h"
 #include "cvs_cmds.h"
 #include "cvstool.h"
 
+#ifndef CVS_PASSWORD_FILE 
+#define CVS_PASSWORD_FILE ".cvspass"
+#endif
+
+/* Prints the usage of vcfsd */
 void usage(char *msg);
+
+/* Tries to get the password for this pserver from the cvs password
+   file (if it exists) */
+char* get_cvs_passwd_from_file(char *user, char *hostname);
 
 struct in_addr validhost;
 
@@ -30,7 +40,7 @@ int main(int argc, char **argv)
     struct sockaddr_in sin;
     int svrsock;
     SVCXPRT *tp;
-    char *pword;
+    char *pword = NULL;
     register SVCXPRT *transp;
     char *module;
     char *root;
@@ -80,9 +90,17 @@ int main(int argc, char **argv)
     module = argv[optind++];
     user = argv[optind];
     
-    /* Get the user's cvs password */
-    pword = getpass("Enter CVS password:");
-    
+    /* Try to get the cvs password from the .cvspass file */
+    pword = get_cvs_passwd_from_file(user, hostname);
+
+    /* Couldn't find the password in their .cvspass file, so
+     * we need to ask the user for it. */
+    if (pword == NULL) {
+
+	/* Get the user's cvs password */
+	pword = getpass("Enter CVS password:");
+    }
+
     /* Now register our nfs server on the localhost */
     if ((hp = gethostbyname("localhost")) == NULL) {
 	    fprintf(stderr, "Cannot resolve localhost.\n");
@@ -162,6 +180,119 @@ int main(int argc, char **argv)
     exit(1);
 }
 
+/* Returns the password for this pserver from the cvs password
+   file (if it exists), NULL otherwise */
+char* get_cvs_passwd_from_file(char *user, char *hostname) 
+{
+    
+    char* home = NULL; /* path to home dir*/
+    char* home_env = NULL; /* contents of home env */
+    struct passwd *pw; /* passwd struct - see man getpwuid for details*/
+    char* passfile = NULL; /* path to the password file */
+    FILE *fp; /* ptr to open cvspass file */
+    char *user_at_host; /* of form username@host */
+    int line_length;
+    long line = 0;
+    char *linebuf = NULL;
+    size_t linebuf_len;
+    char *passwd_chunk;
+    char *password_tmp;
+    char *password;
+    int i = 0;
+
+    /* First find their home directory */
+    if ((home_env = getenv("HOME")) != NULL) {
+	/* They had HOME set. */
+	home = home_env;
+    }
+    else if ((pw = (struct passwd *) getpwuid (getuid()))
+	     && pw->pw_dir) {
+
+	/* We got it from the passwd file */
+	home = strdup(pw->pw_dir);
+    }
+    else {
+	/* Couldn't find their home dir.
+	 * We are outta luck */
+	return NULL;
+    }
+	
+    /* Make space for filename to password file - TODO: what is the +3? */
+    passfile = malloc( strlen(home) + strlen(CVS_PASSWORD_FILE) + 3);
+    
+    strcpy(passfile, home); /* Copy the path to user's home */
+
+    strcat(passfile, "/"); /* append slash to home dir*/
+
+    strcat(passfile, CVS_PASSWORD_FILE); /* append cvs passwd file name*/
+
+    fp = fopen(passfile, "r"); /* open that file for reading */
+
+    if (fp == NULL) {
+	return NULL; /* Couldn't open the file */
+    }
+
+    /* We have their CVS passwd file. Let's check each line for an
+       appropriate entry */
+    while ((line_length = getline( &linebuf, &linebuf_len, fp)) >= 0) {
+
+	line++;
+
+	/* Get mem for full name */
+	user_at_host = malloc( strlen(user) + strlen(hostname) + 3);	
+
+	/* Form into 'user@hostname' */	
+	strcat(user_at_host, user);
+	strcat(user_at_host, "@");
+	strcat(user_at_host, hostname);
+
+	/* Search for the username and server in the line */	
+	if ( (strstr(linebuf, user_at_host) != NULL) &&
+	     /* Search backword for first space char. */
+	     ((passwd_chunk = rindex(linebuf, ' ')) != NULL) &&
+	     /* Then for the char A. (ex. 'Aencryptedpasswd') */
+	     ((passwd_chunk = rindex(linebuf, 'A')) != NULL) ) {	    
+
+		/* Copy the chunk we found and trailing newline */
+		password_tmp = malloc( strlen(passwd_chunk) );
+		
+		/* skip initial space char vvv and skip trailing \n vvvvv */
+		strncpy(password_tmp, passwd_chunk + 1, strlen(passwd_chunk)-2);
+		
+		/* Unscrable passwd - the method is symetric */
+		password = scramble( password_tmp );
+		
+		/* Shift the whole string one char to the left,
+		   pushing the unwanted 'A' off the left end.
+		   Safe, because s is null-terminated. Taken from
+		   CVS client code */
+		for (i = 0; password[i]; i++) 
+		    password[i] = password[i + 1];
+		
+	    }
+	    else {
+		/* Couldn't find or parse the passwd */
+		password = NULL; 
+	    }
+	}
+
+    /* Close the passwd file */
+    if ( fclose(fp) < 0 ) {
+	/* TODO: Should we warn the user we couldn't close their
+           passwd file?? */
+    }
+
+    /* release string memory */
+    free(home);
+    free(passfile); 
+    free(user_at_host);
+    free(password_tmp);
+
+    return password;
+}
+
+/* Prints the usage of vcfsd, with given message (if
+   provided). Otherwise prints the default message. */
 void usage(char *msg)
 {
     if (msg != NULL) {
