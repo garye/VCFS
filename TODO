@@ -10,8 +10,6 @@
   ct diff
   ct update (change version of a file)
 
-- Add option to vcfsd to not use compression
-
 - Delete least-recently used "extended-name" files from cache (README,1.3 etc.)
 
 - Multi-file cache
@@ -23,5 +21,4 @@
 - Webpage:
   Expand description. Add feature list, possible enhancements.
   Add links to related projects, things like CVS resources.
-  Find out why updates on cvs commits/adds are appearing.
 
