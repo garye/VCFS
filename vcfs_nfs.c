@@ -12,7 +12,6 @@
 #include <sys/stat.h>
 #include <rpc/rpc.h>
 #include <errno.h>
-#include <assert.h>
 #include <dirent.h>
 #include "nfsproto.h"
 #include "vcfs.h"
@@ -24,8 +23,9 @@ typedef struct svc_req *SR;
 int get_vattr(vcfs_ventry *v, fattr *f)
 {
     nfstime t = {v->ctime, 0};
-    
-    if (v->type == NFDIR) {
+        
+    if (v->type == NFDIR)
+    {
         f->type = NFDIR;
         f->mode = NFSMODE_DIR | 0555;
         f->nlink = 2;
@@ -42,7 +42,8 @@ int get_vattr(vcfs_ventry *v, fattr *f)
         f->mtime = t;
         f->ctime = t;
     }
-    else {  
+    else 
+    {  
         f->type = NFREG;
         f->mode = (mode_t)33060;
         f->nlink = 1;
@@ -55,7 +56,7 @@ int get_vattr(vcfs_ventry *v, fattr *f)
         f->fsid = 101;
         f->fileid = v->id;
         f->atime = t;
-        f->mtime = t;
+        f->mtime = t; 
         f->ctime = t;
     }
     return 1;
@@ -187,12 +188,11 @@ nfsproc_lookup_2(ap,rp)
     }
     
     /* We found the file, now get it's attributes and return it */
-    assert(f->ventry != NULL);
+    ASSERT(f->ventry != NULL, "File does not have a ventry");
     get_vattr(f->ventry, &ret.diropres_u.diropres.attributes);
     
     ret.status = NFS_OK;
     return &ret;
-    
 }
 
 readlinkres *
@@ -214,11 +214,6 @@ nfsproc_read_2(readargs *ap, SR rp)
     static char buffer[8192];
     int len;
     vcfs_fileid *h;
-    
-    
-    //printf("read: length = %d, offset = %d\n", 
-    // ap->count, ap->offset);
-    //dump_fh(&ap->file);
     
     len = vcfs_read(buffer, (vcfs_fhdata *)&ap->file, ap->count, ap->offset);
     
@@ -401,12 +396,15 @@ nfsproc_readdir_2(ap,rp)
 
     ASSERT(h != NULL, "Trying to read from NULL filehandle");
     
+    DEBUG(DEBUG_L, "[nfsproc_readdir_2] read %s, cookie is %d\n", 
+          h->ventry->name, (*(long *)ap->cookie));
+    
     if (h->id == 0)
     {
         /* Read the root dir */
         entrytab[0].fileid = 1;
         entrytab[0].name = names[0];
-        cookie = 1;
+        cookie = 0;
         memcpy(entrytab[0].cookie, &cookie, sizeof(long));
         *prev = &entrytab[0];
         prev = &entrytab[0].nextentry;
@@ -421,7 +419,7 @@ nfsproc_readdir_2(ap,rp)
         entrytab[1].nextentry = NULL;
         
         entrytab[2].fileid = ventry_list->id;
-        cookie = 2;
+        cookie = 1;
         memcpy(entrytab[2].cookie, &cookie, sizeof(long));
         strcpy(names[2], ventry_list->name);
         entrytab[2].name = names[2];
@@ -450,7 +448,7 @@ nfsproc_readdir_2(ap,rp)
         {
             /* The parent is the root */
             entrytab[1].fileid = 1;
-            cookie = 1;
+            cookie = 0;
             memcpy(entrytab[1].cookie, &cookie, sizeof(long));
             entrytab[1].name = names[1];
             *prev = &entrytab[1];
@@ -465,10 +463,10 @@ nfsproc_readdir_2(ap,rp)
             split_path(h->name, &parent, &entry);
             p = (vcfs_fileid *)lookup_fh_name(parent);
             
-            assert(p != NULL);
+            ASSERT(p != NULL, "The direntry doesn't have a parent");
             
             entrytab[1].fileid = p->id;
-            cookie = p->id;
+            cookie = 1;
             memcpy(entrytab[1].cookie, &cookie, sizeof(long));
             entrytab[1].name = names[1];
             *prev = &entrytab[1];
@@ -507,7 +505,7 @@ nfsproc_readdir_2(ap,rp)
                 continue;
             
             entrytab[count].fileid = temp->id;
-            cookie = j;
+            cookie = j; 
             memcpy(entrytab[count].cookie, &cookie, sizeof(nfscookie));
             strcpy(names[count], entry);
             entrytab[count].name = names[count];
