@@ -268,7 +268,8 @@ char* get_cvs_passwd_from_file(char *user, char *hostname)
 		   CVS client code */
 		for (i = 0; password[i]; i++) 
 		    password[i] = password[i + 1];
-		
+
+		free(password_tmp); /* free malloc mem */
 	    }
 	    else {
 		/* Couldn't find or parse the passwd */
@@ -286,7 +287,6 @@ char* get_cvs_passwd_from_file(char *user, char *hostname)
     free(home);
     free(passfile); 
     free(user_at_host);
-    free(password_tmp);
 
     return password;
 }
