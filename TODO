@@ -4,6 +4,7 @@
 
 - Enhancements to cvstool:
   cvstool should be able to handle relative paths
+  cvstool should accept the "long" format of flags ("-l" or "--long")
   ct lsver -l with log messages
   ct lsver -p (predecessor)
   ct lsver -f (from some particular version, or maybe just how many to show)
@@ -22,4 +23,9 @@ the most work of any of these...
 - Read .cvspass file if available to get password instead of always asking
 
 - Get actual time for files instead of current time
+
+- Webpage:
+  Expand description. Add feature list, possible enhancements.
+  Add links to related projects, things like CVS resources.
+  Find out why updates on cvs commits/adds are appearing.
 
