@@ -24,8 +24,13 @@ vcfs: $(VCFS_OBJS) $(OTHER_OBJS)
 cvstool: $(TOOL_OBJS)
 	$(CC) $(COPT) $(TOOL_OBJS) -o cvstool
 
-clean:
-	rm -f $(VCFS_OBJS) $(OTHER_OBJS) $(TOOL_OBJS) vcfsd cvstool
+clean_vcfs: 
+	rm -f $(VCFS_OBJS) $(OTHER_OBJS) vcfsd
+
+clean_cvstool:
+	rm -f $(TOOL_OBJS) cvstool
+
+clean: clean_vcfs clean_cvstool
 
 
 
