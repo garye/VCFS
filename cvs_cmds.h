@@ -37,7 +37,7 @@ cvs_buff *cvs_get_buff();
 void cvs_free_buff(cvs_buff *b);
 void cvs_ensure_buff(cvs_buff *b, int n);
 
-
+char *scramble (char *str);
 void cvs_init_session(char *hostname, char *root, char *module, char *user,
                       char *password, char *dir, bool use_gzip, char *tag);
 int cvs_pserver_connect();
@@ -54,3 +54,4 @@ int cvs_get_log_info(cvs_buff *log_buff, char **ver,
 int vcfs_read(char *buff, vcfs_fhdata *fh, int count, int offset);
 int cvs_zlib_inflate_buffer(cvs_buff *input_buff, int in_size, int in_offset, 
                             char *output, int out_size, int keep_data);
+int cvs_get_status_tags(vcfs_ventry *v, cvs_buff **resp);
