@@ -6,13 +6,11 @@
   cvstool should be able to handle relative paths
   cvstool should accept the "long" format of flags ("-l" or "--long")
   ct lsver -l with log messages
-  ct lsver -p (predecessor)
   ct lsver -f (from some particular version, or maybe just how many to show)
   ct diff
   ct update (change version of a file)
 
-- Use compression to speed downloads. This would be a wrapper around zlib, and
-the most work of any of these...
+- Add option to vcfsd to not use compression
 
 - Delete least-recently used "extended-name" files from cache (README,1.3 etc.)
 
@@ -21,8 +19,6 @@ the most work of any of these...
 - Better error-handling throughout
 
 - Read .cvspass file if available to get password instead of always asking
-
-- Get actual time for files instead of current time
 
 - Webpage:
   Expand description. Add feature list, possible enhancements.
