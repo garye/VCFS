@@ -1,5 +1,7 @@
 - Fix bugs, general cleanup (obviously)
 
+- Fix Makefile (dependencies aren't quite right. Should force rebuild when .c/.h files change)
+
 - Enhancements to cvstool:
   cvstool should be able to handle relative paths
   ct lsver -l with log messages
@@ -7,7 +9,6 @@
   ct lsver -f (from some particular version, or maybe just how many to show)
   ct diff
   ct update (change version of a file)
-  ct -help (print out list of available commands with examples)
 
 - Use compression to speed downloads. This would be a wrapper around zlib, and
 the most work of any of these...
