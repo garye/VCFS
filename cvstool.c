@@ -106,9 +106,19 @@ void cvstool_do_help()
     printf("%s: Report bugs through http://sourceforge.net/projects/vcfs \n", PROG_NAME);
 }
 
+/*
+ * Translates path from a fully qualified path, that may contain
+ * relative references to a path relative to the VCFS_MOUNT env w/o
+ * relative references. example: 
+ * input:  /vcfs/vcfs/doc/../utils.h
+ * output: vcfs/utils.h
+ */
 char *cvstool_get_rel(char *path)
-{
-    
+{    
+    /* TODO: Is this big enough? This was just a guess... */
+    char resolved_path [255];
+    char *temp_path;
+   
     assert(path != NULL);
 
     if (strlen(path) <= strlen(MOUNT))
@@ -118,7 +128,16 @@ char *cvstool_get_rel(char *path)
     
     if (strncmp(path, MOUNT, strlen(MOUNT)) == 0)
     {
-        return (path + strlen(MOUNT) + 1);
+
+	/* Remove relative references in path */
+	path = realpath(path, resolved_path);
+
+	/* Couldn't resolve them - doh */
+	if (path == NULL) 
+	    return NULL;
+	
+	temp_path = strdup(path);
+        return (temp_path + strlen(MOUNT) + 1);
     }
     else
     {
@@ -177,7 +196,7 @@ int cvstool_do_ls(char **argv, int argc)
         exit(1);
     }
 
-    args.path = strdup(rel_path);
+    args.path = rel_path;
 
     cvstool_setup_client();
 
@@ -192,6 +211,7 @@ int cvstool_do_ls(char **argv, int argc)
     /* Check for errors */
     if (resp->status != CVSTOOL_OK)
     {
+	printf("status was NOT ok\n");
         /* TODO: Display appropriate message */
         return resp->status;
     }
