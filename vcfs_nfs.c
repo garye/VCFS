@@ -381,25 +381,25 @@ nfsproc_readdir_2(ap,rp)
 {
 
     static readdirres ret;
-    static entry entrytab[128];	/* TODO: Change to dynamic */
-    static vcfs_name names[128];
+    static entry entrytab[256];	/* TODO: Change to dynamic */
+    static vcfs_name names[256];
     entry **prev;
     long cookie;
     vcfs_fileid *h;
     vcfs_ventry *temp;
     vcfs_path parent;
     vcfs_name entry;
-    
+
     strcpy(names[0], ".");
     strcpy(names[1], "..");
     
     h = get_fh((vcfs_fhdata *)&ap->dir);
     ret.readdirres_u.reply.eof = TRUE;
-    
+
     prev = &ret.readdirres_u.reply.entries;
     *prev = NULL;
 
-    assert(h != NULL);
+    ASSERT(h != NULL, "Trying to read from NULL filehandle");
     
     if (h->id == 0)
     {
@@ -421,7 +421,7 @@ nfsproc_readdir_2(ap,rp)
         entrytab[1].nextentry = NULL;
         
         entrytab[2].fileid = ventry_list->id;
-        cookie = ventry_list->id;
+        cookie = 2;
         memcpy(entrytab[2].cookie, &cookie, sizeof(long));
         strcpy(names[2], ventry_list->name);
         entrytab[2].name = names[2];
@@ -434,81 +434,102 @@ nfsproc_readdir_2(ap,rp)
         return &ret;
     }
     
-    /* Return . (ap->dir) */
-    entrytab[0].fileid = h->id;
-    entrytab[0].name = names[0];
-    cookie = h->id;
-    memcpy(entrytab[0].cookie, &cookie, sizeof(long));
-    *prev = &entrytab[0];
-    prev = &entrytab[0].nextentry;
-    entrytab[0].nextentry = NULL;
-    
-    /* Return .. */
-    if (h->ventry != NULL && h->ventry == ventry_list)
+    if (*ap->cookie == 0)
     {
-        /* The parent is the root */
-        entrytab[1].fileid = 1;
-        cookie = 1;
-        memcpy(entrytab[1].cookie, &cookie, sizeof(long));
-        entrytab[1].name = names[1];
-        *prev = &entrytab[1];
-        prev = &entrytab[1].nextentry;
-        entrytab[1].nextentry = NULL;
-    }
-    else
-    {
-        /* Get the parent */
-        vcfs_fileid *p;
+        /* Return . (ap->dir) */
+        entrytab[0].fileid = h->id;
+        entrytab[0].name = names[0];
+        cookie = h->id;
+        memcpy(entrytab[0].cookie, &cookie, sizeof(nfscookie));
+        *prev = &entrytab[0];
+        prev = &entrytab[0].nextentry;
+        entrytab[0].nextentry = NULL;
         
-        split_path(h->name, &parent, &entry);
-        p = (vcfs_fileid *)lookup_fh_name(parent);
-        
-        assert(p != NULL);
-        
-        entrytab[1].fileid = p->id;
-        cookie = p->id;
-        memcpy(entrytab[1].cookie, &cookie, sizeof(long));
-        entrytab[1].name = names[1];
-        *prev = &entrytab[1];
-        prev = &entrytab[1].nextentry;
-        entrytab[1].nextentry = NULL;
+        /* Return .. */
+        if (h->ventry != NULL && h->ventry == ventry_list)
+        {
+            /* The parent is the root */
+            entrytab[1].fileid = 1;
+            cookie = 1;
+            memcpy(entrytab[1].cookie, &cookie, sizeof(long));
+            entrytab[1].name = names[1];
+            *prev = &entrytab[1];
+            prev = &entrytab[1].nextentry;
+            entrytab[1].nextentry = NULL;
+        }
+        else
+        {
+            /* Get the parent */
+            vcfs_fileid *p;
+            
+            split_path(h->name, &parent, &entry);
+            p = (vcfs_fileid *)lookup_fh_name(parent);
+            
+            assert(p != NULL);
+            
+            entrytab[1].fileid = p->id;
+            cookie = p->id;
+            memcpy(entrytab[1].cookie, &cookie, sizeof(long));
+            entrytab[1].name = names[1];
+            *prev = &entrytab[1];
+            prev = &entrytab[1].nextentry;
+            entrytab[1].nextentry = NULL;
+        }
     }
     
+    ret.readdirres_u.reply.eof = TRUE;
     /* Now get the rest of the files */
     if (h->ventry != NULL)
     {
+        int count = 0;
         int j = 2;
+        cookie = 2;
         
+        if (*ap->cookie == 0)
+        {
+            count = 2;
+        }
+
         for (temp = h->ventry->dirent; temp != NULL; temp = temp->next)
         {
             split_path(temp->name, &parent, &entry);
             
+            /* Skip entries until we reach the cookie */
+            if (*(long *)ap->cookie > 0 && (cookie - 1) < *(long *)ap->cookie)
+            {
+                cookie++;
+                j++;
+                continue;
+            }
+
             /* Skip filenames containing a comma - ver extended name */
             if (strrchr(entry, ','))
                 continue;
             
-            entrytab[j].fileid = temp->id;
-            cookie = temp->id;
-            memcpy(entrytab[j].cookie, &cookie, sizeof(long));
-            strcpy(names[j], entry);
-            entrytab[j].name = names[j];
-            *prev = &entrytab[j];
-            prev = &entrytab[j].nextentry;
-            entrytab[j].nextentry = NULL;
-            
-            j++;
+            entrytab[count].fileid = temp->id;
+            cookie = j;
+            memcpy(entrytab[count].cookie, &cookie, sizeof(nfscookie));
+            strcpy(names[count], entry);
+            entrytab[count].name = names[count];
+            *prev = &entrytab[count];
+            prev = &entrytab[count].nextentry;
+            entrytab[count].nextentry = NULL;
 
-            /* TEMP HACK */
-            if (j == 128)
+            count++;
+            j++;
+            
+            /* Only return 256 entries at a time */
+            if (count == 256)
+            {
+                ret.readdirres_u.reply.eof = FALSE;
                 break;
+            }
         }
     }
     
     //dump_entries(ret.readdirres_u.reply.entries);
-    ret.readdirres_u.reply.eof = TRUE;
     ret.status = NFS_OK;
     return &ret;
-    
 }
 
 statfsres *
