@@ -24,18 +24,8 @@ vcfs: $(VCFS_OBJS) $(OTHER_OBJS)
 cvstool: $(TOOL_OBJS)
 	$(CC) $(COPT) $(TOOL_OBJS) -o cvstool
 
-nfsproto_xdr.c: nfsproto.x
-	rpcgen $(RPCOPTS) -c -o nfsproto_xdr.c nfsproto.x 
-
-nfsproto_svr.c: nfsproto.x
-	rpcgen $(RPCOPTS) -m -o nfsproto_svr.c nfsproto.x 
-
-nfsproto.h: nfsproto.x
-	cp nfsproto.h.linux nfsproto.h
-
-
 clean:
-	rm -f $(VCFS_OBJS) $(OTHER_OBJS) $(TOOL_OBJS)
+	rm -f $(VCFS_OBJS) $(OTHER_OBJS) $(TOOL_OBJS) vcfsd cvstool
 
 
 
