@@ -1,3 +1,10 @@
+/*****************************************************************************
+ * File: cvs_cmds.c
+ * Functions for communicating with the CVS server. Responses from the server
+ * are read into cvs_buff structures, and are read one line at a time by
+ * cvs_read_line. 
+ ****************************************************************************/
+
 #include <sys/poll.h>
 #include "cvs_cmds.h"
 #include "utils.h"
@@ -44,6 +51,7 @@ char *scramble (char *str)
     return s;
 }
 
+/* Initialize a socket */
 static struct hostent *init_sockaddr(struct sockaddr_in *name, 
                                      char *hostname, unsigned int port)
 {
@@ -65,6 +73,7 @@ static struct hostent *init_sockaddr(struct sockaddr_in *name,
     return hostinfo;
 }
 
+/* Set CVS session arguments */
 void cvs_init(char *hostname, char *root, char *module, char *user,
               char *password, char *dir)
 {
@@ -77,7 +86,10 @@ void cvs_init(char *hostname, char *root, char *module, char *user,
     args->password = scramble(password);
     args->dir = strdup(dir);
 }
-	
+
+/* Returned a malloc'ed cvs_buff.
+ * NOTE: Caller must free return value after use using cvs_free_buff.
+ */
 cvs_buff *cvs_get_buff()
 {
     cvs_buff *b = (cvs_buff *)malloc(sizeof(cvs_buff));
@@ -90,7 +102,8 @@ cvs_buff *cvs_get_buff()
   
     return b;
 }
-    
+ 
+/* Free a previously allocated cvs_buff */
 void cvs_free_buff(cvs_buff *b)
 {
     free(b->data);
@@ -121,6 +134,7 @@ int cvs_check_ok(char *c, int n)
     }
 }
 
+/* Look for an error. Currently unused */
 int cvs_check_error(char *c, int n)
 {
     /* TBD - Make this SMARTER! We will miss many errors. */
@@ -128,6 +142,9 @@ int cvs_check_error(char *c, int n)
             && c[n-5] == 'o' && c[n-4] == 'r');
 }
 
+/* Read one line from the buffer into a malloc'ed string.
+ * NOTE: Caller must free line if not NULL.
+ */
 int cvs_buff_read_line(cvs_buff *b, char **line)
 {
     int len;
@@ -220,6 +237,7 @@ cvs_buff *cvs_get_resp()
     return buff;
 }
 
+/* Connect to the CVS pserver and authenticate ourselves */
 int cvs_pserver_connect() 
 {
     int sock;
@@ -277,6 +295,7 @@ int cvs_pserver_connect()
     return sock;
 }
 
+/* Send data to the CVS server */
 int cvs_send(int sock, char *msg)
 {
     int n;
@@ -301,6 +320,7 @@ int cvs_send(int sock, char *msg)
     return 1;
 }
 
+/* Send "expand-modules" CVS request */
 int cvs_expand_modules(cvs_buff **resp)
 {
     char cmd[1024];
@@ -364,6 +384,7 @@ int cvs_co(cvs_buff **resp)
     return 1;
 }
 
+/* Send an "update" CVS request */
 int cvs_get_file(vcfs_path name, char *ver, cvs_buff **resp)
 {
     char cmd[1024];
@@ -390,6 +411,7 @@ int cvs_get_file(vcfs_path name, char *ver, cvs_buff **resp)
     
 }
 
+/* Send a "log" CVS request */
 int cvs_get_status(vcfs_path name, char *ver, cvs_buff **resp)
 {
 

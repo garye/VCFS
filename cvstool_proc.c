@@ -1,3 +1,9 @@
+/*****************************************************************************
+ * File: cvstool_proc.c
+ * This file contains the implementation of the cvstool commands. The cvstool
+ * protocol is based on RPC, like NFS, and is defined in the file cvstool.x. 
+ ****************************************************************************/
+
 #include "cvstool.h"
 #include "vcfs.h"
 #include "utils.h"
@@ -162,16 +168,26 @@ cvstool_lsver_1(cvstool_lsver_args *argp, struct svc_req *rqstp)
     while(TRUE)
     {
         vers = *versp = (cvstool_ver_info *)malloc(sizeof(cvstool_ver_info));
+        
         if (cvs_get_log_info(resp, &vers->ver, &vers->date, 
                              &vers->author, NULL) == 0)
         {
             /* We've read all the versions we can */
             break;
         }
-        
+
         vers->next = NULL;
         versp = &vers->next;
+        
+        if ((argp->option & CVSTOOL_LSVER_PRE) && count == 1)
+        {
+            /* We just read the predecessor, only return it */
+            result.vers = vers;
+            break;
+        }
+   
         count++;
+        
     }
     
     *versp = NULL;

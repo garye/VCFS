@@ -1,3 +1,9 @@
+/*****************************************************************************
+ * File: cvstool.c
+ * Command-line client for the cvstool utility. Parse options, and call the
+ * appropriate client stub.
+ ****************************************************************************/
+
 #include <stdio.h>
 #include <unistd.h>
 #include <assert.h>
@@ -208,15 +214,20 @@ int cvstool_do_lsver(char **argv, int argc)
 
     /* Get all options for the 'lsver' command */
     /* TODO: Implement other options */
-    while ((opt = getopt(argc, argv, "l")) != -1)
+    while ((opt = getopt(argc, argv, "lp")) != -1)
     {
-     switch (opt)
+        switch (opt)
         {
         case 'l':
         {
             args.option |= CVSTOOL_LSVER_LONG;
             break;
-        }   
+        }
+        case 'p':
+        {
+            args.option |= CVSTOOL_LSVER_PRE;
+	    break;
+        }
         default:
             cvstool_usage("Invalid option specified");
             exit(1);

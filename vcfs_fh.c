@@ -1,3 +1,12 @@
+/****************************************************************************
+ * File: vcfs_fh.c
+ * This file contains functions for manipulating the in-memory filesystem
+ * structures. We keep a hash table of all pathnames in the filesystem, 
+ * represented by vcfs_fileid's. Each vcfs_fileid contains a pointer to a
+ * vcfs_ventry, which contains file attributes for regular files and
+ * a directory listing for directories.
+ ***************************************************************************/
+
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/file.h>
@@ -44,12 +53,15 @@ void dump_fh(vcfs_fhdata *f)
     printf("\n");
 }
 
+/* Set the first few bits of the bitmap to reserve the first few numbers */
 void init_vinode_bmap()
 {
     /* Skip the first couple inode numbers */
     vinode_bmap[0] = 7;
 }
 
+
+/* Get the next unique vinode number */
 int alloc_vinode()
 {
     int i,j;
@@ -135,6 +147,7 @@ vcfs_fileid *find_fh(char *name, int id, int key)
     return NULL;
 }
 
+/* Create a file id */
 vcfs_fileid *create_fh(vcfs_path name, int v, vcfs_ventry *vent)
 {
     vcfs_fileid *f;
@@ -150,6 +163,7 @@ vcfs_fileid *create_fh(vcfs_path name, int v, vcfs_ventry *vent)
     return f;
 }
 
+/* Return a fileid for the given pathname */
 vcfs_fileid *lookup_fh_name(vcfs_path name)
 {
     int h;
@@ -200,6 +214,7 @@ void insert_ventry(vcfs_ventry *v)
     return;
 }
     
+/* Create a ventry */
 vcfs_ventry *create_ventry(vcfs_path name, int size, ftype type,
 			    unsigned int mode, char *ver, time_t t)
 {
@@ -601,6 +616,7 @@ int vcfs_read(char *buff, vcfs_fhdata *fh, int count, int offset)
 }
 
 
+/* Make sure the given version if actually a version of the specified file */
 int vcfs_validate_version(vcfs_ventry *v, char *ver)
 {
     cvs_buff *resp;

@@ -9,6 +9,7 @@
 #define CVSPORT 2401
 #define CVS_BUFF_SIZE 32768
 
+/* A buffer to hold a response from the CVS server */
 typedef struct cvs_buff {
     char *data;
     int size;
@@ -16,6 +17,7 @@ typedef struct cvs_buff {
     int limit;
 } cvs_buff;
 
+/* Information about the current CVS session */
 typedef struct cvs_args {
     char *module;
     char *hostname;
@@ -32,6 +34,7 @@ typedef struct cvs_args {
 cvs_buff *cvs_get_buff();
 void cvs_free_buff(cvs_buff *b);
 void cvs_ensure_buff(cvs_buff *b, int n);
+
 
 void cvs_init(char *hostname, char *root, char *module, char *user,
               char *password, char *dir);

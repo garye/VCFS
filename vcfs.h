@@ -23,13 +23,14 @@ typedef char vcfs_path[NFS_MAXPATHLEN];
 typedef char vcfs_name[NFS_MAXNAMLEN];
 typedef char vcfs_ver[16];
 
+/* The filehandle we use to communciate with NFS */
 typedef struct vcfs_fhdata {
     unsigned int magic;
     int id;
     int key;
 } vcfs_fhdata;
 
-/* This is a hash table entry */
+/* Hash table entry for every file and directory */
 typedef struct vcfs_fileid {
     int id;
     int hash_key;
@@ -75,6 +76,8 @@ typedef struct vcfs_read_cachent {
     int size;
 } vcfs_read_cachent;
 
+
+/* Function declarations */
 int hash(char *s);
 
 int vcfs_build_project();

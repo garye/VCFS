@@ -1,3 +1,11 @@
+/****************************************************************************
+ * Filename: vcfs_nfs.c
+ * Our actual implementation of the small subset of the NFS protocol that we
+ * currently support. The NFS client and this server communicate via
+ * filehandles (vcfs_fhdata) that are opaque to the client and are unique
+ * for every file in the filesystem.
+ ***************************************************************************/
+
 #include <stdio.h>
 #include <sys/file.h>
 #include <sys/types.h>
@@ -254,7 +262,7 @@ nfsproc_write_2(ap,rp)
 {
 	static attrstat ret;
 
-	ret.status = NFSERR_NOENT;
+	ret.status = NFSERR_ACCES;
 	return &ret;
 
 }
@@ -267,7 +275,7 @@ nfsproc_create_2(ap,rp)
 {
 	static diropres ret;
 
-	ret.status = NFSERR_NOENT;
+	ret.status = NFSERR_ACCES;
 	return &ret;
 
 }
@@ -280,7 +288,7 @@ nfsproc_remove_2(ap,rp)
 {
 	static nfsstat ret;
 
-	ret = NFSERR_NOENT;
+	ret = NFSERR_ACCES;
 	return &ret;
 	
 }
@@ -293,7 +301,7 @@ nfsproc_rename_2(ap,rp)
 {
 	static nfsstat ret;
 
-	ret = NFSERR_NOENT;
+	ret = NFSERR_ACCES;
 	return &ret;
 
 }
@@ -306,7 +314,7 @@ nfsproc_link_2(ap,rp)
 {
 	static nfsstat ret;
 
-	ret = NFSERR_NOENT;
+	ret = NFSERR_ACCES;
 	return &ret;
 
 }
@@ -331,7 +339,7 @@ nfsproc_mkdir_2(ap,rp)
 {
 	static diropres ret;
 
-	ret.status = NFSERR_NOENT;
+	ret.status = NFSERR_ACCES;
 	return &ret;
 
 }
@@ -344,7 +352,7 @@ nfsproc_rmdir_2(ap,rp)
 {
 	static nfsstat ret;
 
-	ret = NFSERR_NOENT;
+	ret = NFSERR_ACCES;
 	return &ret;
 	
 }
