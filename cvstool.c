@@ -17,6 +17,7 @@ char *MOUNT;
 char *PROG_NAME;
 
 void cvstool_usage(char *msg);
+void cvstool_do_help();
 int cvstool_do_ls(char **argv, int argc);
 int cvstool_do_lsver(char **argv, int argc); 
 char *cvstool_get_rel(char *path);
@@ -58,6 +59,10 @@ int main(int argc, char **argv)
     {
         status = cvstool_do_lsver(argv, argc);
     }
+    else if (!strcmp(argv[1], "help")) 
+    {
+	cvstool_do_help();
+    }
     else
     {
         cvstool_usage("Invalid command specified");
@@ -72,7 +77,22 @@ int main(int argc, char **argv)
 void cvstool_usage(char *msg) 
 {
     printf("%s: %s\n", PROG_NAME, msg);
-    
+    printf("%s: Type \'%s help\' for more information.\n", PROG_NAME, PROG_NAME);
+}
+
+void cvstool_do_help() 
+{
+    printf("%s: Usage: %s COMMAND [FILENAME] \n", PROG_NAME, PROG_NAME);
+    printf("%s: Perform COMMAND on FILENAME or current directory\n", PROG_NAME);
+    printf("%s: Valid commands are:\n", PROG_NAME);
+    printf("%s:   ls              List the current version of the file or directory\n", PROG_NAME);
+    printf("%s:   lsver [-l] [-p] List all of the versions of this file\n", PROG_NAME);
+    printf("%s:   lsver -l        List all of the versions of this file with more information\n", PROG_NAME);
+    printf("%s:   lsver -p        List the previous version of this file\n", PROG_NAME);
+
+    /* This should be last */
+    printf("%s:   help            Prints out this help message\n", PROG_NAME);
+    printf("%s: Report bugs through http://sourceforge.net/projects/vcfs \n", PROG_NAME);
 }
 
 char *cvstool_get_rel(char *path)
