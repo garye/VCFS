@@ -56,13 +56,23 @@ xdr_cvstool_date (XDR *xdrs, cvstool_date *objp)
 }
 
 bool_t
+xdr_cvstool_tag (XDR *xdrs, cvstool_tag *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_string (xdrs, objp, CVSTOOL_TAGLEN))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
 xdr_cvstool_ls_args (XDR *xdrs, cvstool_ls_args *objp)
 {
 	register int32_t *buf;
 
 	 if (!xdr_cvstool_path (xdrs, &objp->path))
 		 return FALSE;
-	 if (!xdr_u_int (xdrs, &objp->option))
+	 if (!xdr_u_int (xdrs, &objp->options))
 		 return FALSE;
 	 if (!xdr_int (xdrs, &objp->num_resp))
 		 return FALSE;
@@ -79,6 +89,8 @@ xdr_cvstool_ver_info (XDR *xdrs, cvstool_ver_info *objp)
 	 if (!xdr_cvstool_name (xdrs, &objp->author))
 		 return FALSE;
 	 if (!xdr_cvstool_date (xdrs, &objp->date))
+		 return FALSE;
+	 if (!xdr_cvstool_tag (xdrs, &objp->tag))
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->next, sizeof (cvstool_ver_info), (xdrproc_t) xdr_cvstool_ver_info))
 		 return FALSE;
@@ -110,6 +122,8 @@ xdr_cvstool_ls_resp (XDR *xdrs, cvstool_ls_resp *objp)
 		 return FALSE;
 	 if (!xdr_cvstool_status (xdrs, &objp->status))
 		 return FALSE;
+     if (!xdr_int (xdrs, &objp->eof))
+         return FALSE;
 	return TRUE;
 }
 
@@ -122,7 +136,7 @@ xdr_cvstool_lsver_args (XDR *xdrs, cvstool_lsver_args *objp)
 		 return FALSE;
 	 if (!xdr_cvstool_ver (xdrs, &objp->from_ver))
 		 return FALSE;
-	 if (!xdr_u_int (xdrs, &objp->option))
+	 if (!xdr_u_int (xdrs, &objp->options))
 		 return FALSE;
 	 if (!xdr_int (xdrs, &objp->num_resp))
 		 return FALSE;
@@ -138,6 +152,32 @@ xdr_cvstool_lsver_resp (XDR *xdrs, cvstool_lsver_resp *objp)
 		 return FALSE;
 	 if (!xdr_pointer (xdrs, (char **)&objp->vers, sizeof (cvstool_ver_info), (xdrproc_t) xdr_cvstool_ver_info))
 		 return FALSE;
+	 if (!xdr_cvstool_status (xdrs, &objp->status))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_cvstool_update_args (XDR *xdrs, cvstool_update_args *objp)
+{
+	register int32_t *buf;
+
+	 if (!xdr_cvstool_path (xdrs, &objp->path))
+		 return FALSE;
+	 if (!xdr_cvstool_ver (xdrs, &objp->ver))
+		 return FALSE;
+	 if (!xdr_cvstool_tag (xdrs, &objp->tag))
+		 return FALSE;
+	 if (!xdr_u_int (xdrs, &objp->options))
+		 return FALSE;
+	return TRUE;
+}
+
+bool_t
+xdr_cvstool_update_resp (XDR *xdrs, cvstool_update_resp *objp)
+{
+	register int32_t *buf;
+
 	 if (!xdr_cvstool_status (xdrs, &objp->status))
 		 return FALSE;
 	return TRUE;

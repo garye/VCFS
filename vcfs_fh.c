@@ -16,7 +16,6 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <time.h>
-#include <assert.h>
 
 #include "vcfs.h"
 #include "cvs_cmds.h"
@@ -44,7 +43,7 @@ static vcfs_read_cachent *read_cache;
 void dump_fh(vcfs_fhdata *f)
 {
     
-    assert(f != NULL);
+    ASSERT(f != NULL, "Dumping a NULL filehandle");
 	
     printf("\t*** fh dump ***\n");
     printf("\tmagic - 0x%x\n", f->magic);
@@ -89,7 +88,7 @@ int alloc_vinode()
         }
     } 
     /* Shouldn't happen! */
-    assert(1 < 0);
+    ASSERT(1 < 0, "Ran out of vinodes");
     return 0;
 }
 
@@ -137,10 +136,13 @@ vcfs_fileid *find_fh(char *name, int id, int key)
     bucket = key;
     
     i = file_hash[bucket];
-    while (i != NULL) {
-        if (i->id == id) {
+    while (i != NULL)
+    {
+        if (i->id == id)
+        {
             return i;
         }
+
         i = i->next;
     }
     
@@ -189,6 +191,7 @@ void insert_ventry(vcfs_ventry *v)
     vcfs_fileid *f;
     vcfs_ventry *p;
     
+    ASSERT(v != NULL, "Inserting a NULL ventry");
 
     /* First get a pointer to the parent ventry */
     split_path(v->name, &parent, &entry);
@@ -238,6 +241,10 @@ vcfs_ventry *create_ventry(vcfs_path name, int size, ftype type,
     {
         strncpy(v->tag, tag, VCFS_TAG_LEN);
     }
+    else
+    {
+        memset(v->tag, 0, VCFS_TAG_LEN);
+    }
     
     insert_ventry(v);
     return v;
@@ -247,6 +254,8 @@ vcfs_ventry *create_ventry(vcfs_path name, int size, ftype type,
 /* Put a file into the cache */
 void insert_fh(vcfs_fileid *f)
 {
+    ASSERT(f != NULL, "Inserting a NULL fileid");
+
     f->next = file_hash[f->hash_key];
     file_hash[f->hash_key] = f;
 }
@@ -260,6 +269,8 @@ vcfs_fileid *lookuph(vcfs_fileid *d, char *name, vcfs_fhdata *fh)
     vcfs_ver ver;
     int extended = 0;
     int size;
+
+    ASSERT(name != NULL, "NULL name pointer");
 
     fh->magic = MAGICNUM;
     
@@ -380,7 +391,6 @@ int vcfs_build_project()
     ventry_list->next = NULL;
     ventry_list->dirent = NULL;
 
-
     for (i = 0; i < strlen(beg); i++)
     {
         if (beg[i] == '/' || beg[i] == '\012')
@@ -415,7 +425,7 @@ int vcfs_build_project()
             break;
         }
     }
-    
+
     /* Check out the project */
     r = cvs_co(&co_buff, NULL);
 
@@ -435,8 +445,11 @@ int vcfs_build_project()
         int size;
         int beg_ver;
         int real_size;
-        
+        vcfs_tag tag_copy;
+
         memset(path, 0, sizeof(path));
+        memset(tag_copy, 0, sizeof(tag_copy));
+
         if (line[0] == 'E')
         {
             /* Looks like a directory. 
@@ -488,10 +501,11 @@ int vcfs_build_project()
                 {
                     tag = beg + 2;
                 }
+                strncpy(tag_copy, tag, sizeof(tag_copy));
             }
-            
+
             free(line);
-            
+
             cvs_buff_read_line(co_buff, NULL); /* permissions */
             cvs_buff_read_line(co_buff, &line);
             
@@ -509,8 +523,8 @@ int vcfs_build_project()
             {
                 real_size = size = atoi(line);
             }
-            
-            v = create_ventry(path, real_size, NFREG, 0, ver, current_time, tag);
+
+            v = create_ventry(path, real_size, NFREG, 0, ver, current_time, tag_copy);
             create_fh(path, 1, v);
             fprintf(stderr, "  create file %s\n", path);
             
@@ -552,7 +566,7 @@ int vcfs_read(char *buff, vcfs_fhdata *fh, int count, int offset)
     
     f = get_fh(fh);
     
-    assert(f != NULL);
+    ASSERT(f != NULL, "Reading from a bad filehandle");
     
     /* Adjust the name if it is version extended */
     if (!cvs_ver_extended(f->name, &filename, &ver))

@@ -91,7 +91,7 @@ void cvs_init_session(char *hostname, char *root, char *module, char *user,
     memset(session->tag, 0, sizeof(session->tag));
     if (tag != NULL)
     {
-        strncpy(session->tag, tag, sizeof(session->tag));
+        strncpy(session->tag, tag, VCFS_TAG_LEN);
     }
 
 }
@@ -227,12 +227,12 @@ cvs_buff *cvs_get_resp()
             }
         }
         
-        memset(&temp, 0, CVS_READ_SIZE);
+        //memset(&temp, 0, CVS_READ_SIZE);
         n = recv(session->sock, &temp, CVS_READ_SIZE, 0);
-        
+
         if (DEBUG_RESP)
         {
-            printf("The data is:\n-------------\n%s\n----------------\n", temp);
+            printf("The data is:\n-------------\n%s\n----------------\n",temp);
         }
         
         cvs_ensure_buff(buff, n);
@@ -405,22 +405,27 @@ int cvs_co(cvs_buff **resp, char *tag)
 /* Send an "update" CVS request */
 int cvs_get_file(vcfs_path name, char *ver, cvs_buff **resp)
 {
-    char cmd[1024];
+    char cmd[2048];
+    char temp[1024];
     vcfs_path parent;
     vcfs_name entry;
     
+    memset(cmd, 0, sizeof(cmd));
+    memset(temp, 0, sizeof(temp));
+
     split_path(name, &parent, &entry);
     
     sprintf(cmd, "Argument -r\012Argument %s\012", ver);
-    cvs_send(session->sock, cmd);
+    
+    sprintf(temp, "Argument -u\012Directory .\012%s/%s\012\0", session->root, parent);
+    strcat(cmd, temp);
 
-    sprintf(cmd, "Argument -u\012Directory .\012%s/%s\012", session->root, parent);
-    cvs_send(session->sock, cmd);
+    sprintf(temp, "Entry /%s/%s///\012\0", entry, ver);
+    strcat(cmd, temp);
     
-    sprintf(cmd, "Entry /%s/%s///\012", entry, ver);
-    cvs_send(session->sock, cmd);
+    sprintf(temp, "Argument %s\012update\012\0", entry);
+    strcat(cmd, temp);
     
-    sprintf(cmd, "Argument %s\012update\012", entry);
     cvs_send(session->sock, cmd);
     
     *resp = cvs_get_resp();
@@ -457,6 +462,33 @@ int cvs_get_status(vcfs_path name, char *ver, cvs_buff **resp)
 
 }
 
+/* Send a 'cvs status -v' command */
+int cvs_get_status_tags(vcfs_ventry *v, cvs_buff **resp)
+{
+    char cmd[1024];
+    vcfs_path parent;
+    vcfs_name entry;
+    
+    split_path(v->name, &parent, &entry);
+    
+    sprintf(cmd, "Argument -v\012");
+    cvs_send(session->sock, cmd);
+    
+    sprintf(cmd, "Directory .\012%s/%s\012", session->root, parent);
+    cvs_send(session->sock, cmd);
+    
+    sprintf(cmd, "Entry /%s/%s///\012", entry, v->ver);
+    
+    cvs_send(session->sock, cmd);
+    
+    sprintf(cmd, "Argument %s\012status\012", entry);
+    cvs_send(session->sock, cmd);
+    
+    *resp = cvs_get_resp();
+    
+    return 1;  
+}
+    
 int cvs_get_log(vcfs_path name, cvs_buff **resp)
 {
     char cmd[1024];
@@ -515,7 +547,7 @@ int cvs_get_log_info(cvs_buff *log_buff, char **ver,
     int len;
     int n;
 
-    while((n = cvs_buff_read_line(log_buff, &line)) > 0) 
+    while ((n = cvs_buff_read_line(log_buff, &line)) > 0) 
     {
         if (!strncmp(line, "M revision", 10))
         {

@@ -3,11 +3,10 @@
  * It was generated using rpcgen.
  */
 
-#ifndef _CVSTOOL_H_RPCGEN
-#define _CVSTOOL_H_RPCGEN
+//#ifndef _CVSTOOL_H_RPCGEN
+//#define _CVSTOOL_H_RPCGEN
 
 #include <rpc/rpc.h>
-
 #include "cvstool_redefines.h"
 
 #ifdef __cplusplus
@@ -23,27 +22,32 @@ extern "C" {
 #define CVSTOOL_TAGLEN 32
 
 enum cvstool_status {
-    CVSTOOL_OK = 0,
+	CVSTOOL_OK = 0,
 	CVSTOOL_NOENT = 1,
 	CVSTOOL_NOEOF = 2,
 	CVSTOOL_CVSERR = 3,
 	CVSTOOL_OPT_MISMATCH = 4,
 	CVSTOOL_FTYPE_MISMATCH = 5,
+	CVSTOOL_NOVER = 6,
+	CVSTOOL_NOTAG = 7,
 };
 typedef enum cvstool_status cvstool_status;
 
 typedef char *cvstool_path;
-typedef char *cvstool_name;
-typedef char *cvstool_ver;
-typedef char *cvstool_date;
-typedef char *cvstool_tag;
 
+typedef char *cvstool_name;
+
+typedef char *cvstool_ver;
+
+typedef char *cvstool_date;
+
+typedef char *cvstool_tag;
 #define CVSTOOL_LS_LONG 0x00000001
 #define CVSTOOL_LS_DIRECTORY 0x00000002
 
 struct cvstool_ls_args {
 	cvstool_path path;
-	u_int option;
+	u_int options;
 	int num_resp;
 };
 typedef struct cvstool_ls_args cvstool_ls_args;
@@ -52,6 +56,7 @@ struct cvstool_ver_info {
 	cvstool_ver ver;
 	cvstool_name author;
 	cvstool_date date;
+	cvstool_tag tag;
 	struct cvstool_ver_info *next;
 };
 typedef struct cvstool_ver_info cvstool_ver_info;
@@ -67,6 +72,7 @@ struct cvstool_ls_resp {
 	int num_resp;
 	cvstool_dirent *dirents;
 	cvstool_status status;
+    int eof;
 };
 typedef struct cvstool_ls_resp cvstool_ls_resp;
 #define CVSTOOL_LSVER_LONG 0x00000001
@@ -76,7 +82,7 @@ typedef struct cvstool_ls_resp cvstool_ls_resp;
 struct cvstool_lsver_args {
 	cvstool_path path;
 	cvstool_ver from_ver;
-	u_int option;
+	u_int options;
 	int num_resp;
 };
 typedef struct cvstool_lsver_args cvstool_lsver_args;
@@ -87,6 +93,22 @@ struct cvstool_lsver_resp {
 	cvstool_status status;
 };
 typedef struct cvstool_lsver_resp cvstool_lsver_resp;
+#define CVSTOOL_UPDATE_DYNAMIC 0x00000001
+#define CVSTOOL_UPDATE_VER 0x00000002
+#define CVSTOOL_UPDATE_TAG 0x00000004
+
+struct cvstool_update_args {
+	cvstool_path path;
+	cvstool_ver ver;
+	cvstool_tag tag;
+	u_int options;
+};
+typedef struct cvstool_update_args cvstool_update_args;
+
+struct cvstool_update_resp {
+	cvstool_status status;
+};
+typedef struct cvstool_update_resp cvstool_update_resp;
 
 #define CVSTOOL_PROGRAM 0x3315563
 #define CVSTOOL_VERSION 1
@@ -98,17 +120,10 @@ extern  cvstool_ls_resp * cvstool_ls_1_svc();
 #define CVSTOOL_LSVER 2
 extern  cvstool_lsver_resp * cvstool_lsver_1();
 extern  cvstool_lsver_resp * cvstool_lsver_1_svc();
+#define CVSTOOL_UPDATE 3
+extern  cvstool_update_resp * cvstool_update_1();
+extern  cvstool_update_resp * cvstool_update_1_svc();
 extern int cvstool_program_1_freeresult (SVCXPRT *, xdrproc_t, caddr_t);
-
-#else /* K&R C */
-#define CVSTOOL_LS 1
-extern  cvstool_ls_resp * cvstool_ls_1();
-extern  cvstool_ls_resp * cvstool_ls_1_svc();
-#define CVSTOOL_LSVER 2
-extern  cvstool_lsver_resp * cvstool_lsver_1();
-extern  cvstool_lsver_resp * cvstool_lsver_1_svc();
-extern int cvstool_program_1_freeresult ();
-#endif /* K&R C */
 
 /* the xdr functions */
 
@@ -118,12 +133,15 @@ extern  bool_t xdr_cvstool_path (XDR *, cvstool_path*);
 extern  bool_t xdr_cvstool_name (XDR *, cvstool_name*);
 extern  bool_t xdr_cvstool_ver (XDR *, cvstool_ver*);
 extern  bool_t xdr_cvstool_date (XDR *, cvstool_date*);
+extern  bool_t xdr_cvstool_tag (XDR *, cvstool_tag*);
 extern  bool_t xdr_cvstool_ls_args (XDR *, cvstool_ls_args*);
 extern  bool_t xdr_cvstool_ver_info (XDR *, cvstool_ver_info*);
 extern  bool_t xdr_cvstool_dirent (XDR *, cvstool_dirent*);
 extern  bool_t xdr_cvstool_ls_resp (XDR *, cvstool_ls_resp*);
 extern  bool_t xdr_cvstool_lsver_args (XDR *, cvstool_lsver_args*);
 extern  bool_t xdr_cvstool_lsver_resp (XDR *, cvstool_lsver_resp*);
+extern  bool_t xdr_cvstool_update_args (XDR *, cvstool_update_args*);
+extern  bool_t xdr_cvstool_update_resp (XDR *, cvstool_update_resp*);
 
 #else /* K&R C */
 extern bool_t xdr_cvstool_status ();
@@ -131,12 +149,15 @@ extern bool_t xdr_cvstool_path ();
 extern bool_t xdr_cvstool_name ();
 extern bool_t xdr_cvstool_ver ();
 extern bool_t xdr_cvstool_date ();
+extern bool_t xdr_cvstool_tag ();
 extern bool_t xdr_cvstool_ls_args ();
 extern bool_t xdr_cvstool_ver_info ();
 extern bool_t xdr_cvstool_dirent ();
 extern bool_t xdr_cvstool_ls_resp ();
 extern bool_t xdr_cvstool_lsver_args ();
 extern bool_t xdr_cvstool_lsver_resp ();
+extern bool_t xdr_cvstool_update_args ();
+extern bool_t xdr_cvstool_update_resp ();
 
 #endif /* K&R C */
 

@@ -49,6 +49,7 @@ int main(int argc, char **argv)
     bool use_gzip = TRUE;
     char *tag = NULL;
     int opt;
+    bool check_cvspass = TRUE;
 
     progname = argv[0];
     port = VCFS_PORT;
@@ -60,7 +61,7 @@ int main(int argc, char **argv)
     
     /* Get command options */
     opterr = 0;
-    while ((opt = getopt(argc, argv, "nt:")) != -1)
+    while ((opt = getopt(argc, argv, "int:")) != -1)
     {
         switch (opt)
         {
@@ -71,6 +72,11 @@ int main(int argc, char **argv)
         case 't':
             tag = optarg;
             break;
+
+        case 'i':
+            check_cvspass = FALSE;
+            break;
+            
         default:
             usage("Invalid option.");
             exit(1);
@@ -90,15 +96,22 @@ int main(int argc, char **argv)
     module = argv[optind++];
     user = argv[optind];
     
-    /* Try to get the cvs password from the .cvspass file */
-    pword = get_cvs_passwd_from_file(user, hostname);
+    if (check_cvspass)
+    {
+        /* Try to get the cvs password from the .cvspass file */
+        pword = get_cvs_passwd_from_file(user, hostname);
+    }
+    else
+    {
+        pword = NULL;
+    }
 
     /* Couldn't find the password in their .cvspass file, so
      * we need to ask the user for it. */
     if (pword == NULL) {
 
-	/* Get the user's cvs password */
-	pword = getpass("Enter CVS password:");
+        /* Get the user's cvs password */
+        pword = getpass("Enter CVS password:");
     }
 
     /* Now register our nfs server on the localhost */
@@ -303,5 +316,6 @@ void usage(char *msg)
             progname);
     fprintf(stderr, "-n\tDon't gzip file contents\n");
     fprintf(stderr, "-t TAG\tLoad the version of the repository specified by TAG, which is either a branch or tag name\n");
+    fprintf(stderr, "-i\tDon't look for password in .cvspass file\n");
 }
 

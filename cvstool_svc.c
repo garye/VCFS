@@ -22,6 +22,7 @@ cvstool_program_1(struct svc_req *rqstp, register SVCXPRT *transp)
 	union {
 		cvstool_ls_args cvstool_ls_1_arg;
 		cvstool_lsver_args cvstool_lsver_1_arg;
+		cvstool_update_args cvstool_update_1_arg;
 	} argument;
 	char *result;
 	xdrproc_t _xdr_argument, _xdr_result;
@@ -42,6 +43,12 @@ cvstool_program_1(struct svc_req *rqstp, register SVCXPRT *transp)
 		_xdr_argument = (xdrproc_t) xdr_cvstool_lsver_args;
 		_xdr_result = (xdrproc_t) xdr_cvstool_lsver_resp;
 		local = (char *(*)(char *, struct svc_req *)) cvstool_lsver_1_svc;
+		break;
+
+	case CVSTOOL_UPDATE:
+		_xdr_argument = (xdrproc_t) xdr_cvstool_update_args;
+		_xdr_result = (xdrproc_t) xdr_cvstool_update_resp;
+		local = (char *(*)(char *, struct svc_req *)) cvstool_update_1_svc;
 		break;
 
 	default:

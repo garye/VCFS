@@ -38,3 +38,18 @@ cvstool_lsver_1(cvstool_lsver_args *argp, CLIENT *clnt)
 	}
 	return (&clnt_res);
 }
+
+cvstool_update_resp *
+cvstool_update_1(cvstool_update_args *argp, CLIENT *clnt)
+{
+	static cvstool_update_resp clnt_res;
+
+	memset((char *)&clnt_res, 0, sizeof(clnt_res));
+	if (clnt_call (clnt, CVSTOOL_UPDATE,
+		(xdrproc_t) xdr_cvstool_update_args, (caddr_t) argp,
+		(xdrproc_t) xdr_cvstool_update_resp, (caddr_t) &clnt_res,
+		TIMEOUT) != RPC_SUCCESS) {
+		return (NULL);
+	}
+	return (&clnt_res);
+}
