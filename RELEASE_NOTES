@@ -1,0 +1,80 @@
+             ***** Release Notes for VCFS test release 0.1 *****
+
+For more information about vcfsd, run 'vcfsd' with no options.
+For more information about cvstool, run 'cvstool help'.
+
+The following features *should* work in this release:
+
+- Read-only access to any local or remote CVS repository accessible
+  via the pserver authentication method.
+
+- The cvstool utility, which gives additional CVS-specific information
+  about files in the repository that you mount. The following commands
+  are currently supported:
+
+  - cvstool ls: List every file in this directory along with the
+    revision that is loaded. Example:
+   
+    >cvstool ls
+    foo.c,1.5
+    bar.c,1.2
+    
+    Example of 'cvstool ls -l':
+
+    >cvstool ls -l
+    foo.c,1.5                 endgame00   2001/09/15 14:50:45
+    bar.c,1.2                 endgame00   2001/09/15 14:50:10
+
+ - cvstool lsver: List every revision that exists for a particular
+   file. Example:
+   
+   >cvstool lsver bar.c
+    1.2             
+    1.1             
+    1.1.1.1 
+
+   Example of 'cvstool lsver -l':
+
+   >cvstool lsver -l bar.c
+    1.2                      endgame00     2001/09/25 03:05:16             
+    1.1                      endgame00     2001/09/09 20:24:05             
+    1.1.1.1                  endgame00     2001/09/09 20:24:05
+
+    'cvstool lsver -p' just lists the previous version of the file.
+
+- Revision-extended naming. This feature allows you at access any
+  revision of a particular file at any time, regardless of whether it
+  is loaded or not. You access revision-extended files using the same
+  format as the output of 'cvstool ls'. See the following example:
+
+  View a file that is loaded into vcfs:
+ 
+  >cat foo.c
+  I am foo.c version 1.5
+
+  View a revision-extended file:
+ 
+  >cat foo.c,1.3
+  I am foo.c version 1.3
+  
+  Run diff on these two files to see what has changed:
+ 
+  >diff foo.c foo.c,1.3
+  1c1
+  < I am foo.c version 1.5
+  ---
+  > I am foo.c version 1.3
+
+
+Current limitations of VCFS:
+
+- It's slow! In particular, reading a file for the first time (before
+  it is in your local NFS client's cache) will seem sluggish, as will
+  any cvstool command with the '-l' option. In both cases, VCFS needs
+  to get a great deal of information from the CVS server.
+
+- It's not dynamic. Once you load a repository, the versions of each
+  file are fixed until you reload the repository to get the latest
+  version. This will be improved in future releases.
+
+- Bugs. There's probably a lot of 'em, so if you you find any let us know.

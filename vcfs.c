@@ -80,7 +80,6 @@ int main(int argc, char **argv)
     module = argv[optind++];
     user = argv[optind];
     
-
     /* Get the user's cvs password */
     pword = getpass("Enter CVS password:");
     
@@ -151,7 +150,13 @@ int main(int argc, char **argv)
         exit(1);
     }
     
-    vcfs_build_project();
+    if (!vcfs_build_project())
+    {
+        /* Error building the project */
+        fprintf(stderr, "Error mounting repository\n");
+        exit(1);
+    }
+
     printf("CVS project %s successfully mounted\n", argv[3]);
 	svc_run();
     exit(1);
@@ -166,6 +171,6 @@ void usage(char *msg)
     fprintf(stderr, "Usage: %s [OPTION] HOSTNAME CVSROOT PROJECT USERNAME\n\n",
             progname);
     fprintf(stderr, "-n\tDon't gzip file contents\n");
-    fprintf(stderr, "-t TAG\tLoad the contents of the repository specified by TAG\n");
+    fprintf(stderr, "-t TAG\tLoad the version of the repository specified by TAG, which is either a branch or tag name\n");
 }
 

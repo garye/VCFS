@@ -20,9 +20,10 @@ extern "C" {
 #define CVSTOOL_MAXVER 64
 #define CVSTOOL_VERLEN 16
 #define CVSTOOL_DATELEN 32
+#define CVSTOOL_TAGLEN 32
 
 enum cvstool_status {
-	CVSTOOL_OK = 0,
+    CVSTOOL_OK = 0,
 	CVSTOOL_NOENT = 1,
 	CVSTOOL_NOEOF = 2,
 	CVSTOOL_CVSERR = 3,
@@ -32,12 +33,11 @@ enum cvstool_status {
 typedef enum cvstool_status cvstool_status;
 
 typedef char *cvstool_path;
-
 typedef char *cvstool_name;
-
 typedef char *cvstool_ver;
-
 typedef char *cvstool_date;
+typedef char *cvstool_tag;
+
 #define CVSTOOL_LS_LONG 0x00000001
 #define CVSTOOL_LS_DIRECTORY 0x00000002
 

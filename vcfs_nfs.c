@@ -105,7 +105,7 @@ nfsproc_getattr_2(ap,rp)
     static attrstat ret;
     vcfs_fileid *f;
     
-    debug("getattr:\n");
+    //debug("getattr:\n");
     //dump_fh((vcfs_fhdata *)ap);
     f = get_fh((vcfs_fhdata *)ap);
    
@@ -165,7 +165,7 @@ nfsproc_lookup_2(ap,rp)
     static diropres ret;
     vcfs_fhdata *hand;
     
-    printf("lookup %s in\n",ap->name);
+    //printf("lookup %s in\n",ap->name);
     //dump_fh((vcfs_fhdata *)(&ap->dir));
     
     parent = get_fh((vcfs_fhdata *)(&ap->dir));
@@ -216,8 +216,8 @@ nfsproc_read_2(readargs *ap, SR rp)
     vcfs_fileid *h;
     
     
-    printf("read: length = %d, offset = %d\n", 
-	   ap->count, ap->offset);
+    //printf("read: length = %d, offset = %d\n", 
+    // ap->count, ap->offset);
     //dump_fh(&ap->file);
     
     len = vcfs_read(buffer, (vcfs_fhdata *)&ap->file, ap->count, ap->offset);

@@ -12,6 +12,7 @@
 #include "vcfs.h"
 
 CLIENT *clnt;
+bool   client_setup = FALSE;
 
 char *MOUNT;
 char *PROG_NAME;
@@ -21,7 +22,7 @@ void cvstool_do_help();
 int cvstool_do_ls(char **argv, int argc);
 int cvstool_do_lsver(char **argv, int argc); 
 char *cvstool_get_rel(char *path);
-
+void cvstool_setup_client(void);
 
 int main(int argc, char **argv)
 {
@@ -43,13 +44,6 @@ int main(int argc, char **argv)
         exit(1);
     }
     
-    clnt = clnt_create("localhost", CVSTOOL_PROGRAM, CVSTOOL_VERSION, "udp");
-    
-    if (clnt == (CLIENT *)NULL) {
-        clnt_pcreateerror("localhost error");
-        exit(1);
-    }
-    
     /* Get the command */
     if (!strcmp(argv[1], "ls"))
     {
@@ -59,19 +53,36 @@ int main(int argc, char **argv)
     {
         status = cvstool_do_lsver(argv, argc);
     }
-    else if (!strcmp(argv[1], "help")) 
+    else if (!strcmp(argv[1], "help") || !strcmp(argv[1], "-h")) 
     {
-	cvstool_do_help();
+        cvstool_do_help();
     }
     else
     {
         cvstool_usage("Invalid command specified");
     }
     
-    clnt_destroy(clnt);
+    if (client_setup)
+    {
+        clnt_destroy(clnt);
+    }
     
     exit(status);
 
+}
+
+void cvstool_setup_client(void)
+{
+    clnt = clnt_create("localhost", CVSTOOL_PROGRAM, CVSTOOL_VERSION, "udp");
+    
+    if (clnt == (CLIENT *)NULL) {
+        clnt_pcreateerror("localhost error");
+        exit(1);
+    }
+    
+    client_setup = TRUE;
+
+    return;
 }
 
 void cvstool_usage(char *msg) 
@@ -168,6 +179,9 @@ int cvstool_do_ls(char **argv, int argc)
 
     args.path = strdup(rel_path);
 
+    cvstool_setup_client();
+
+    /* Make the RPC call */
     resp = cvstool_ls_1(&args, clnt);
     
     if (resp == NULL) {
@@ -279,13 +293,16 @@ int cvstool_do_lsver(char **argv, int argc)
     
     args.path = strdup(rel_path);
     
+    cvstool_setup_client();
+    
+    /* Make the RPC call */
     resp = cvstool_lsver_1(&args, clnt);
-
+    
     if (resp == NULL) {
         clnt_perror(clnt, "error receiving response");
         exit(1);
     }
-
+    
     /* Check for errors */
     if (resp->status != CVSTOOL_OK)
     {

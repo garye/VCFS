@@ -343,6 +343,8 @@ int vcfs_build_project()
     char ver[16];
     int count = 0;
 
+    printf("Please wait, loading project...\n");
+
     time(&current_time);
     
     /* Expand the module */
@@ -372,7 +374,6 @@ int vcfs_build_project()
     /* Prepare the root dir of the project */
     ventry_list = (vcfs_ventry *)malloc(sizeof(vcfs_ventry));
 
-    /*strcpy(ventry_list->name, temp);*/
     ventry_list->id = 3; /* The very top dir is 1 */
     ventry_list->size = 2048;
     ventry_list->type = NFDIR;
@@ -417,6 +418,12 @@ int vcfs_build_project()
     
     /* Check out the project */
     r = cvs_co(&co_buff, NULL);
+
+    if (!r)
+    {
+        /* The repository could not be checked out */
+        return 0;
+    }
     
     /* Parse the response buffer, build the rest of the ventry tree */
     cvs_buff_read_line(co_buff, &line); /* Swallow first line. TBD - really? */

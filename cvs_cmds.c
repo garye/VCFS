@@ -96,7 +96,7 @@ void cvs_init_session(char *hostname, char *root, char *module, char *user,
 
 }
 
-/* Returned a malloc'ed cvs_buff.
+/* Returned a malloc'ed cvs_buff containing the entire response.
  * NOTE: Caller must free return value after use using cvs_free_buff.
  */
 cvs_buff *cvs_get_buff()
@@ -147,7 +147,6 @@ int cvs_check_ok(char *c, int n)
 /* Look for an error. Currently unused */
 int cvs_check_error(char *c, int n)
 {
-    /* TBD - Make this SMARTER! We will miss many errors. */
     return (c[n-8] == 'e' && c[n-7] == 'r' && c[n-6] == 'r' 
             && c[n-5] == 'o' && c[n-4] == 'r');
 }
@@ -209,7 +208,7 @@ cvs_buff *cvs_get_resp()
 
     do 
     {
-        result = poll(&fds, 1, 30000);
+        result = poll(&fds, 1, 10000);
         
         if (result == 0)
         {
@@ -324,7 +323,7 @@ int cvs_send(int sock, char *msg)
     }
     else {
         /* Debug sends */
-        debug("C (%d bytes): %s\n", n, msg);
+        /* debug("C (%d bytes): %s\n", n, msg); */
     }
 
     return 1;
@@ -337,13 +336,6 @@ int cvs_expand_modules(cvs_buff **resp)
     char buff[1024];
     
     memset(buff, 0, 1024);
-
-    /*
-    if (chdir(session->dir) != 0) {
-        fprintf(stderr, "Could not chdir to directory %s\n", session->dir);
-        return 0;
-    }
-    */
 
     sprintf(&cmd[0], "Root %s\012", session->root);
     cvs_send(session->sock, cmd);
@@ -400,6 +392,11 @@ int cvs_co(cvs_buff **resp, char *tag)
     before = time(NULL);
     
     *resp = cvs_get_resp();
+    if (*resp == NULL)
+    {
+        return 0;
+    }
+
     printf("total time = %ld\n", time(NULL) - before);
     
     return 1;
