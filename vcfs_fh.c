@@ -196,7 +196,7 @@ void insert_ventry(vcfs_ventry *v)
     
     if (f == NULL)
     {
-        printf("insert_ventry: Couldn't find parent %s\n", parent);
+        printf("insert_ventry: Couldn't find parent %s for %s\n", parent,v->name);
         return;
     }
     
@@ -216,10 +216,10 @@ void insert_ventry(vcfs_ventry *v)
     
 /* Create a ventry */
 vcfs_ventry *create_ventry(vcfs_path name, int size, ftype type,
-			    unsigned int mode, char *ver, time_t t)
+                           unsigned int mode, char *ver, time_t t, char *tag)
 {
     vcfs_ventry *v;
-
+    
     v = (vcfs_ventry *)malloc(sizeof(vcfs_ventry));
     
     strcpy(v->name, name);
@@ -228,10 +228,16 @@ vcfs_ventry *create_ventry(vcfs_path name, int size, ftype type,
     v->type = type;
     v->mode = mode;
     if (ver != NULL)
-        strncpy(v->ver, ver, 16);
+    {
+        strncpy(v->ver, ver, VCFS_VER_LEN);
+    }
     v->ctime = t;
     v->next = NULL;
     v->dirent = NULL;
+    if (tag != NULL)
+    {
+        strncpy(v->tag, tag, VCFS_TAG_LEN);
+    }
     
     insert_ventry(v);
     return v;
@@ -307,7 +313,7 @@ vcfs_fileid *lookuph(vcfs_fileid *d, char *name, vcfs_fhdata *fh)
             vcfs_ventry *v;
             
             /* Construct it */
-            v = create_ventry(path, size, NFREG, 0, ver, (time_t)0);
+            v = create_ventry(path, size, NFREG, 0, ver, (time_t)0, NULL);
             f = create_fh(path, 1, v);
             
             fh->id = v->id;
@@ -394,7 +400,7 @@ int vcfs_build_project()
                 vcfs_ventry *v;
                 
                 v = create_ventry(mod_path, 2048, NFDIR, 
-                                  0, NULL, current_time);
+                                  0, NULL, current_time, NULL);
                 create_fh(mod_path, 1, v);
             }
             
@@ -431,7 +437,7 @@ int vcfs_build_project()
              * TODO - Make extra sure this is a dir and not another message.
              */
             strncpy(path, line + 23, (strlen(line) - 23));
-            v = create_ventry(path, 2048, NFDIR, 0, NULL, current_time);
+            v = create_ventry(path, 2048, NFDIR, 0, NULL, current_time, NULL);
             create_fh(path, 1, v);
             fprintf(stderr, "create dir %s\n", path);
         }
@@ -440,6 +446,8 @@ int vcfs_build_project()
             /* Looks like a file */
             /* TODO - Get the mode */
             /* HACK - Filename is from line[4] on */
+            char *tag = NULL;
+            
             strncpy(path, line + 4, (strlen(line) - 4));
             free(line);
             
@@ -464,6 +472,16 @@ int vcfs_build_project()
                     break;
                 }
             }
+
+            /* Get the tag if it exists */
+            beg = strrchr(line, '/');
+            if (beg != NULL && (char)*(beg + 1) == 'T')
+            {
+                if (beg + 2 < line + strlen(line))
+                {
+                    tag = beg + 2;
+                }
+            }
             
             free(line);
             
@@ -477,14 +495,15 @@ int vcfs_build_project()
                 size = atoi(line + 1);
                 
                 /* Get the uncompressed size */
-                real_size = cvs_zlib_inflate_buffer(co_buff, size, 0, buff, 8192, FALSE);
+                real_size = cvs_zlib_inflate_buffer(co_buff, size, 0,
+                                                    buff, 8192, FALSE);
             }
             else
             {
                 real_size = size = atoi(line);
             }
             
-            v = create_ventry(path, real_size, NFREG, 0, ver, current_time);
+            v = create_ventry(path, real_size, NFREG, 0, ver, current_time, tag);
             create_fh(path, 1, v);
             fprintf(stderr, "  create file %s\n", path);
             
@@ -655,7 +674,7 @@ int vcfs_read(char *buff, vcfs_fhdata *fh, int count, int offset)
 }
 
 
-/* Make sure the given version if actually a version of the specified file */
+/* Make sure the given version is actually a version of the specified file */
 int vcfs_validate_version(vcfs_ventry *v, char *ver)
 {
     cvs_buff *resp;

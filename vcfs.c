@@ -37,12 +37,11 @@ int main(int argc, char **argv)
     char *hostname;
     char *user;
     bool use_gzip = TRUE;
-    vcfs_tag tag;
+    char *tag = NULL;
     int opt;
 
     progname = argv[0];
     port = VCFS_PORT;
-    memset(tag, 0, VCFS_TAG_LEN);
 
     if (argc < 5) {
         usage(NULL);
@@ -60,7 +59,7 @@ int main(int argc, char **argv)
             break;
             
         case 't':
-            strncpy(&tag[0], optarg, VCFS_TAG_LEN);
+            tag = optarg;
             break;
         default:
             usage("Invalid option.");

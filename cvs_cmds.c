@@ -11,23 +11,24 @@
 
 
 static unsigned char
-shifts[] = {
+shifts[] = 
+{
     0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
-   16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
-  114,120, 53, 79, 96,109, 72,108, 70, 64, 76, 67,116, 74, 68, 87,
-  111, 52, 75,119, 49, 34, 82, 81, 95, 65,112, 86,118,110,122,105,
-   41, 57, 83, 43, 46,102, 40, 89, 38,103, 45, 50, 42,123, 91, 35,
-  125, 55, 54, 66,124,126, 59, 47, 92, 71,115, 78, 88,107,106, 56,
-   36,121,117,104,101,100, 69, 73, 99, 63, 94, 93, 39, 37, 61, 48,
-   58,113, 32, 90, 44, 98, 60, 51, 33, 97, 62, 77, 84, 80, 85,223,
-  225,216,187,166,229,189,222,188,141,249,148,200,184,136,248,190,
-  199,170,181,204,138,232,218,183,255,234,220,247,213,203,226,193,
-  174,172,228,252,217,201,131,230,197,211,145,238,161,179,160,212,
-  207,221,254,173,202,146,224,151,140,196,205,130,135,133,143,246,
-  192,159,244,239,185,168,215,144,139,165,180,157,147,186,214,176,
-  227,231,219,169,175,156,206,198,129,164,150,210,154,177,134,127,
-  182,128,158,208,162,132,167,209,149,241,153,251,237,236,171,195,
-  243,233,253,240,194,250,191,155,142,137,245,235,163,242,178,152 };
+    16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+    114,120, 53, 79, 96,109, 72,108, 70, 64, 76, 67,116, 74, 68, 87,
+    111, 52, 75,119, 49, 34, 82, 81, 95, 65,112, 86,118,110,122,105,
+    41, 57, 83, 43, 46,102, 40, 89, 38,103, 45, 50, 42,123, 91, 35,
+    125, 55, 54, 66,124,126, 59, 47, 92, 71,115, 78, 88,107,106, 56,
+    36,121,117,104,101,100, 69, 73, 99, 63, 94, 93, 39, 37, 61, 48,
+    58,113, 32, 90, 44, 98, 60, 51, 33, 97, 62, 77, 84, 80, 85,223,
+    225,216,187,166,229,189,222,188,141,249,148,200,184,136,248,190,
+    199,170,181,204,138,232,218,183,255,234,220,247,213,203,226,193,
+    174,172,228,252,217,201,131,230,197,211,145,238,161,179,160,212,
+    207,221,254,173,202,146,224,151,140,196,205,130,135,133,143,246,
+    192,159,244,239,185,168,215,144,139,165,180,157,147,186,214,176,
+    227,231,219,169,175,156,206,198,129,164,150,210,154,177,134,127,
+    182,128,158,208,162,132,167,209,149,241,153,251,237,236,171,195,
+    243,233,253,240,194,250,191,155,142,137,245,235,163,242,178,152 };
 
 static cvs_session *session;
 int DEBUG_RESP = 0;
@@ -75,7 +76,7 @@ static struct hostent *init_sockaddr(struct sockaddr_in *name,
 
 /* Set initial CVS session arguments */
 void cvs_init_session(char *hostname, char *root, char *module, char *user,
-                      char *password, char *dir, bool use_gzip, vcfs_tag tag)
+                      char *password, char *dir, bool use_gzip, char *tag)
 {
     session = (cvs_session *)malloc(sizeof(cvs_session));
 
@@ -86,7 +87,13 @@ void cvs_init_session(char *hostname, char *root, char *module, char *user,
     session->password = scramble(password);
     session->dir = strdup(dir);
     session->use_gzip = use_gzip;
-    *session->tag = *tag;
+
+    memset(session->tag, 0, sizeof(session->tag));
+    if (tag != NULL)
+    {
+        strncpy(session->tag, tag, sizeof(session->tag));
+    }
+
 }
 
 /* Returned a malloc'ed cvs_buff.
@@ -127,7 +134,8 @@ void cvs_ensure_buff(cvs_buff *b, int n)
  */
 int cvs_check_ok(char *c, int n)
 {
-    if (n > 0) {
+    if (n > 0)
+    {
         return (c[n-3] == 'o' && c[n-2] == 'k' && c[n-1] == '\012');
     }
     else
@@ -201,7 +209,7 @@ cvs_buff *cvs_get_resp()
 
     do 
     {
-        result = poll(&fds, 1, 3000);
+        result = poll(&fds, 1, 30000);
         
         if (result == 0)
         {
@@ -356,16 +364,24 @@ int cvs_expand_modules(cvs_buff **resp)
 }
 
 /* Checkout the module and get a complete dir listing. */
-int cvs_co(cvs_buff **resp, vcfs_tag tag)
+int cvs_co(cvs_buff **resp, char *tag)
 {
     char cmd[1024];
     time_t before;
-
+    
     if (session->use_gzip)
     {
         cvs_send(session->sock, "gzip-file-contents 3\012");
     }
-
+    
+    if (strlen(session->tag) > 0)
+    {
+        strcpy(cmd, "Argument -r\012Argument ");
+        strcat(cmd, session->tag);
+        strcat(cmd, "\012");
+        cvs_send(session->sock, cmd);  
+    }
+    
     /* TBD - rewrite with sprintf!! */
     strcpy(cmd, "Argument ");
     strcat(cmd, session->module);
@@ -382,7 +398,7 @@ int cvs_co(cvs_buff **resp, vcfs_tag tag)
     cvs_send(session->sock, "co\012");
 
     before = time(NULL);
-
+    
     *resp = cvs_get_resp();
     printf("total time = %ld\n", time(NULL) - before);
     

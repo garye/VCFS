@@ -94,7 +94,7 @@ void insert_fh(vcfs_fileid *f);
 vcfs_fileid *create_fh(vcfs_path name, int v, vcfs_ventry *vent);
 void insert_ventry(vcfs_ventry *v);
 vcfs_ventry *create_ventry(vcfs_path name, int size, ftype type,
-			    unsigned int mode, char *ver, time_t t);
+			    unsigned int mode, char *ver, time_t t, char *tag);
 vcfs_fileid *lookuph(vcfs_fileid *d, char *name, vcfs_fhdata *fh);
 vcfs_fileid *lookup_fh_name(vcfs_path name);
 int vcfs_read(char *buff, vcfs_fhdata *fh, int count, int offset);

@@ -39,11 +39,11 @@ void cvs_ensure_buff(cvs_buff *b, int n);
 
 
 void cvs_init_session(char *hostname, char *root, char *module, char *user,
-                      char *password, char *dir, bool use_gzip, vcfs_tag tag);
+                      char *password, char *dir, bool use_gzip, char *tag);
 int cvs_pserver_connect();
 int cvs_send(int sock, char *msg);
 int cvs_expand_modules(cvs_buff **resp);
-int cvs_co(cvs_buff **resp, vcfs_tag tag);
+int cvs_co(cvs_buff **resp, char *tag);
 int cvs_buff_read_line(cvs_buff *b, char **line);
 int cvs_ver_extended(char *name, vcfs_path *short_name, vcfs_ver *ver);
 int cvs_get_file(vcfs_path name, char *ver, cvs_buff **resp);
