@@ -359,7 +359,7 @@ int cvs_co(cvs_buff **resp)
     char cmd[1024];
     time_t before;
 
-    //cvs_send(args->sock, "gzip-file-contents 3\012");
+    cvs_send(args->sock, "gzip-file-contents 3\012");
     
     /* TBD - rewrite with sprintf!! */
     strcpy(cmd, "Argument ");

@@ -421,6 +421,7 @@ int vcfs_build_project()
         vcfs_path path;
         int size;
         int beg_ver;
+        int real_size;
         
         memset(path, 0, sizeof(path));
         if (line[0] == 'E')
@@ -463,26 +464,30 @@ int vcfs_build_project()
                     break;
                 }
             }
-
+            
             free(line);
             
             cvs_buff_read_line(co_buff, NULL); /* permissions */
             cvs_buff_read_line(co_buff, &line);
-
+            
             if (line[0] == 'z')
             {
-                /* We are using compression */
+                char buff[8192];
+                /* We are using compression - this is the compressed size */
                 size = atoi(line + 1);
+                
+                /* Get the uncompressed size */
+                real_size = cvs_zlib_inflate_buffer(co_buff, size, 0, buff, 8192, FALSE);
             }
             else
             {
-                size = atoi(line);
+                real_size = size = atoi(line);
             }
-
-            v = create_ventry(path, size, NFREG, 0, ver, current_time);
+            
+            v = create_ventry(path, real_size, NFREG, 0, ver, current_time);
             create_fh(path, 1, v);
             fprintf(stderr, "  create file %s\n", path);
-
+            
             /* Skip over the file data */
             co_buff->cookie += size;
         }
@@ -516,7 +521,8 @@ int vcfs_read(char *buff, vcfs_fhdata *fh, int count, int offset)
     int cached_read = FALSE;
     vcfs_path filename;
     vcfs_ver ver;
-
+    int compressed_offset;
+    
     f = get_fh(fh);
     
     assert(f != NULL);
@@ -533,7 +539,7 @@ int vcfs_read(char *buff, vcfs_fhdata *fh, int count, int offset)
     if (read_cache->id == f->id)
     {
         cached_read = TRUE;
-        
+
         if (read_cache->size == READ_CACHE_SIZE && offset + count > cache_end)
         {
             /* We are reading beyond our current cache */
@@ -548,6 +554,7 @@ int vcfs_read(char *buff, vcfs_fhdata *fh, int count, int offset)
         else
         {
             /* We have everything we need in cache, return it */
+            
             memcpy(buff, read_cache->data + offset - read_cache->start, count);
             len = count;
             return len;
@@ -565,7 +572,29 @@ int vcfs_read(char *buff, vcfs_fhdata *fh, int count, int offset)
     }
     
     cvs_buff_read_line(resp, &line);
-    size = atoi(line);
+    
+    if (line[0] == 'z')
+    {
+        /* This file is compressed */
+        size = atoi(line + 1);
+        
+        /* Get the uncompressed chunk of the file we need to fill the cache */
+        if (cached_read)
+        {
+            compressed_offset = read_cache->start + read_cache->size;
+        }
+        else
+        {
+            compressed_offset = 0;
+        }
+        
+        size = cvs_zlib_inflate_buffer(resp, size, compressed_offset, read_cache->data,
+                                       READ_CACHE_SIZE, TRUE);
+    }
+    else
+    {
+        size = atoi(line);
+    }
     free(line);
     
     f->ventry->size = size;
@@ -578,8 +607,7 @@ int vcfs_read(char *buff, vcfs_fhdata *fh, int count, int offset)
             size = READ_CACHE_SIZE;
         }
         read_cache->start += read_cache->size;
-        memcpy(read_cache->data, resp->data + resp->cookie + read_cache->start,
-               size);
+        
         read_cache->size = size;
         offset -= read_cache->start;
     }
@@ -590,10 +618,9 @@ int vcfs_read(char *buff, vcfs_fhdata *fh, int count, int offset)
             size = READ_CACHE_SIZE;
         }
         
-        memcpy(read_cache->data, resp->data + resp->cookie, size);
         read_cache->size = size;
         read_cache->start = 0;
-
+        
     }
     
     if (offset + count > read_cache->start + read_cache->size)
