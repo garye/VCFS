@@ -1,5 +1,6 @@
-Warning:
-This software is in the early stages of development. Please use with caution.
+Warning: 
+This software is in the early stages of development. Please
+use with caution, and report bugs through http://sourceforge.net/projects/vcfs.
 
 Installation:
 Running 'make' gives you two executables, 'vcfsd' and 'cvstool'.
@@ -25,7 +26,9 @@ directory.
 Add the mount point to your /etc/exports file (add the line "/null localhost") 
 to export the boostraped mount point to the local machine.
 
-Now start the vcfsd daemon to connect to a CVS repository.
+Now start the vcfsd daemon to connect to a CVS repository
+(ex. "./vcfsd cvs.vcfs.sourceforge.net /cvsroot/vcfs vcfs anonymous"
+and push return again when asked for a password).
 
 Finally, as root, make sure the mount daemon is running ('rpc.mountd' on my system),
 and mount the filesystem with the command 'mount -o port=3155,intr localhost:/null /vcfs'

@@ -1,0 +1,24 @@
+- Fix bugs, general cleanup (obviously)
+
+- Enhancements to cvstool:
+  cvstool should be able to handle relative paths
+  ct lsver -l with log messages
+  ct lsver -p (predecessor)
+  ct lsver -f (from some particular version, or maybe just how many to show)
+  ct diff
+  ct update (change version of a file)
+  ct -help (print out list of available commands with examples)
+
+- Use compression to speed downloads. This would be a wrapper around zlib, and
+the most work of any of these...
+
+- Delete least-recently used "extended-name" files from cache (README,1.3 etc.)
+
+- Multi-file cache
+
+- Better error-handling throughout
+
+- Read .cvspass file if available to get password instead of always asking
+
+- Get actual time for files instead of current time
+
